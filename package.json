@@ -1,0 +1,35 @@
+{
+  "name": "gateflow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "GATEFLOW — GATE 2027 study tracker",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n client,server -c cyan,green \"npm run dev -w client\" \"npm run dev -w server\"",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "build": "npm run build -w client && npm run typecheck -w server",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv": "^16.6.1",
+    "prisma": "^6.16.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
