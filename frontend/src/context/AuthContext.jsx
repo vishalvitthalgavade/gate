@@ -8,12 +8,43 @@ import {
 
 const AuthContext = createContext(null);
 
-const API_BASE_URL =
+/*
+====================================================
+API BASE URL
+====================================================
+*/
+
+const API_BASE_URL = (
   import.meta.env.VITE_API_URL ||
-  "http://localhost:5000/api";
+  "http://localhost:5000/api"
+).replace(/\/+$/, "");
 
 const ACCESS_TOKEN_KEY = "gate-access-token";
 const USER_KEY = "gate-user";
+
+/*
+====================================================
+BUILD API URL
+====================================================
+*/
+
+function buildApiUrl(path) {
+  // If an absolute URL is provided, use it directly.
+  if (
+    path.startsWith("http://") ||
+    path.startsWith("https://")
+  ) {
+    return path;
+  }
+
+  // Always ensure exactly one slash between
+  // API base URL and endpoint.
+  const cleanPath = path.startsWith("/")
+    ? path
+    : `/${path}`;
+
+  return `${API_BASE_URL}${cleanPath}`;
+}
 
 /*
 ====================================================
@@ -126,31 +157,25 @@ REFRESH SESSION
     refreshPromiseRef.current =
       (async () => {
         try {
-          const response =
-            await fetch(
-              `${API_BASE_URL}/auth/refresh`,
-              {
-                method: "POST",
+          const response = await fetch(
+            buildApiUrl("/auth/refresh"),
+            {
+              method: "POST",
 
-                /*
-                  VERY IMPORTANT:
-                  sends the HttpOnly refresh cookie.
-                */
-                credentials: "include",
+              /*
+                Sends the HttpOnly refresh cookie.
+              */
+              credentials: "include",
 
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-              }
-            );
+              headers: {
+                Accept: "application/json",
+              },
+            }
+          );
 
           /*
             401/403 means the refresh session
             is actually invalid or expired.
-
-            In this case it is appropriate to
-            log the user out.
           */
           if (
             response.status === 401 ||
@@ -164,7 +189,7 @@ REFRESH SESSION
           /*
             Server error / temporary problem.
 
-            Do NOT destroy the cached login.
+            Do NOT destroy cached login.
           */
           if (!response.ok) {
             console.warn(
@@ -181,10 +206,6 @@ REFRESH SESSION
             await response.json();
 
           if (!data?.success) {
-            /*
-              Don't immediately log out for a
-              malformed/temporary response.
-            */
             return Boolean(
               localStorage.getItem(USER_KEY)
             );
@@ -210,8 +231,7 @@ REFRESH SESSION
             localStorage.getItem(USER_KEY)
           );
         } finally {
-          refreshPromiseRef.current =
-            null;
+          refreshPromiseRef.current = null;
         }
       })();
 
@@ -270,7 +290,7 @@ SIGNUP
     password
   ) {
     const response = await fetch(
-      `${API_BASE_URL}/auth/signup`,
+      buildApiUrl("/auth/signup"),
       {
         method: "POST",
 
@@ -318,7 +338,7 @@ LOGIN
     password
   ) {
     const response = await fetch(
-      `${API_BASE_URL}/auth/login`,
+      buildApiUrl("/auth/login"),
       {
         method: "POST",
 
@@ -363,7 +383,7 @@ LOGOUT
   async function logout() {
     try {
       await fetch(
-        `${API_BASE_URL}/auth/logout`,
+        buildApiUrl("/auth/logout"),
         {
           method: "POST",
 
@@ -399,111 +419,104 @@ AUTHENTICATED FETCH
 ====================================================
 */
 
- async function authFetch(url, options = {}) {
-  let token =
-    accessToken ||
-    localStorage.getItem(
-      ACCESS_TOKEN_KEY
-    );
+  async function authFetch(
+    url,
+    options = {}
+  ) {
+    let token =
+      accessToken ||
+      localStorage.getItem(
+        ACCESS_TOKEN_KEY
+      );
 
-  /*
-  ====================================================
-  BUILD API URL
-  ====================================================
+    /*
+    ====================================================
+    BUILD API URL
+    ====================================================
 
-  StudyContext uses:
+    Example:
 
       authFetch("/sessions")
 
-  We convert that into:
+    becomes:
 
-      http://localhost:5000/api/sessions
+      https://YOUR-BACKEND.vercel.app/api/sessions
+    */
 
-  In production, VITE_API_URL will be used.
-  */
+    const fullUrl = buildApiUrl(url);
 
-  const fullUrl =
-    url.startsWith("http://") ||
-    url.startsWith("https://")
-      ? url
-      : `${API_BASE_URL}${
-          url.startsWith("/")
-            ? url
-            : `/${url}`
-        }`;
-
-  async function makeRequest(
-    currentToken
-  ) {
-    const headers = new Headers(
-      options.headers || {}
-    );
-
-    if (currentToken) {
-      headers.set(
-        "Authorization",
-        `Bearer ${currentToken}`
-      );
-    }
-
-    if (
-      options.body &&
-      !headers.has("Content-Type")
+    async function makeRequest(
+      currentToken
     ) {
+      const headers = new Headers(
+        options.headers || {}
+      );
+
+      if (currentToken) {
+        headers.set(
+          "Authorization",
+          `Bearer ${currentToken}`
+        );
+      }
+
+      if (
+        options.body &&
+        !headers.has("Content-Type")
+      ) {
+        headers.set(
+          "Content-Type",
+          "application/json"
+        );
+      }
+
       headers.set(
-        "Content-Type",
+        "Accept",
         "application/json"
       );
+
+      return fetch(fullUrl, {
+        ...options,
+        headers,
+
+        /*
+          Sends the HttpOnly refresh cookie.
+        */
+        credentials: "include",
+      });
     }
 
-    headers.set(
-      "Accept",
-      "application/json"
-    );
+    /*
+    ====================================================
+    FIRST REQUEST
+    ====================================================
+    */
 
-    return fetch(fullUrl, {
-      ...options,
-      headers,
+    let response =
+      await makeRequest(token);
 
-      /*
-        Sends the HttpOnly refresh cookie.
-      */
-      credentials: "include",
-    });
-  }
+    /*
+    ====================================================
+    ACCESS TOKEN EXPIRED
+    ====================================================
+    */
 
-  /*
-  ====================================================
-  FIRST REQUEST
-  ====================================================
-  */
+    if (response.status === 401) {
+      const refreshed =
+        await refreshSession();
 
-  let response =
-    await makeRequest(token);
+      if (refreshed) {
+        token =
+          localStorage.getItem(
+            ACCESS_TOKEN_KEY
+          );
 
-  /*
-  ====================================================
-  ACCESS TOKEN EXPIRED
-  ====================================================
-  */
-
-  if (response.status === 401) {
-    const refreshed =
-      await refreshSession();
-
-    if (refreshed) {
-      token =
-        localStorage.getItem(
-          ACCESS_TOKEN_KEY
-        );
-
-      response =
-        await makeRequest(token);
+        response =
+          await makeRequest(token);
+      }
     }
-  }
 
-  return response;
-}
+    return response;
+  }
 
   /*
 ====================================================
