@@ -1,0 +1,328 @@
+import {
+  LayoutDashboard,
+  Timer,
+  Flame,
+  BookOpen,
+  History,
+  BarChart3,
+  X,
+  LogOut,
+  Sun,
+  Moon,
+} from "lucide-react";
+
+import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
+import { NavLink, useNavigate } from "react-router-dom";
+
+function Sidebar({ isOpen, setIsOpen }) {
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+
+  const navigate = useNavigate();
+
+  const menuItems = [
+    {
+      name: "Dashboard",
+      path: "/",
+      icon: LayoutDashboard,
+    },
+    {
+      name: "Timer",
+      path: "/timer",
+      icon: Timer,
+    },
+    {
+      name: "Heatmap",
+      path: "/heatmap",
+      icon: Flame,
+    },
+    {
+      name: "Syllabus",
+      path: "/syllabus",
+      icon: BookOpen,
+    },
+    {
+      name: "History",
+      path: "/history",
+      icon: History,
+    },
+    {
+      name: "Statistics",
+      path: "/statistics",
+      icon: BarChart3,
+    },
+  ];
+
+  async function handleLogout() {
+    await logout();
+
+    setIsOpen(false);
+    navigate("/login", { replace: true });
+  }
+
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed left-0 top-0 z-50
+          flex h-screen w-64 flex-col
+          border-r
+          transition-all duration-300
+
+          ${
+            theme === "dark"
+              ? "border-zinc-800 bg-zinc-950"
+              : "border-gray-200 bg-white"
+          }
+
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          md:translate-x-0
+        `}
+      >
+        {/* Logo */}
+        <div
+          className={`
+            flex items-center justify-between
+            border-b px-5 py-5
+
+            ${
+              theme === "dark"
+                ? "border-zinc-800"
+                : "border-gray-200"
+            }
+          `}
+        >
+          <div>
+            <h1
+              className={`
+                text-xl font-bold
+                ${
+                  theme === "dark"
+                    ? "text-white"
+                    : "text-gray-900"
+                }
+              `}
+            >
+              GATE CSE
+            </h1>
+
+            <p
+              className={`
+                mt-1 text-sm
+                ${
+                  theme === "dark"
+                    ? "text-zinc-500"
+                    : "text-gray-500"
+                }
+              `}
+            >
+              Study Tracker
+            </p>
+          </div>
+
+          {/* Mobile Close */}
+          <button
+            onClick={() => setIsOpen(false)}
+            className={`
+              rounded-lg p-2 transition
+              md:hidden
+
+              ${
+                theme === "dark"
+                  ? "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              }
+            `}
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 space-y-2 overflow-y-auto p-4">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === "/"}
+                onClick={() => setIsOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+                    isActive
+                      ? "bg-purple-600 text-white"
+                      : theme === "dark"
+                        ? "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  }`
+                }
+              >
+                <Icon size={20} />
+
+                <span>{item.name}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Bottom Section */}
+        <div
+          className={`
+            border-t p-4
+            ${
+              theme === "dark"
+                ? "border-zinc-800"
+                : "border-gray-200"
+            }
+          `}
+        >
+          {/* User */}
+          {user && (
+            <div
+              className={`
+                mb-3 rounded-lg px-3 py-3
+
+                ${
+                  theme === "dark"
+                    ? "bg-zinc-900/70"
+                    : "bg-gray-100"
+                }
+              `}
+            >
+              <p
+                className={`
+                  truncate text-sm font-semibold
+                  ${
+                    theme === "dark"
+                      ? "text-white"
+                      : "text-gray-900"
+                  }
+                `}
+              >
+                {user.name}
+              </p>
+
+              <p
+                className={`
+                  mt-1 truncate text-xs
+                  ${
+                    theme === "dark"
+                      ? "text-zinc-500"
+                      : "text-gray-500"
+                  }
+                `}
+              >
+                {user.email}
+              </p>
+            </div>
+          )}
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className={`
+              mb-2 flex w-full items-center
+              justify-between rounded-lg px-3 py-3
+              text-sm font-medium transition
+
+              ${
+                theme === "dark"
+                  ? "text-zinc-300 hover:bg-zinc-900"
+                  : "text-gray-700 hover:bg-gray-100"
+              }
+            `}
+          >
+            <div className="flex items-center gap-3">
+              {theme === "dark" ? (
+                <Moon size={19} />
+              ) : (
+                <Sun size={19} />
+              )}
+
+              <span>
+                {theme === "dark"
+                  ? "Dark Mode"
+                  : "Light Mode"}
+              </span>
+            </div>
+
+            {/* Toggle */}
+            <div
+              className={`
+                relative h-6 w-11
+                rounded-full transition-colors
+
+                ${
+                  theme === "dark"
+                    ? "bg-purple-600"
+                    : "bg-gray-300"
+                }
+              `}
+            >
+              <div
+                className={`
+                  absolute top-1 h-4 w-4
+                  rounded-full bg-white
+                  shadow-sm transition-transform
+
+                  ${
+                    theme === "dark"
+                      ? "translate-x-6"
+                      : "translate-x-1"
+                  }
+                `}
+              />
+            </div>
+          </button>
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className={`
+              flex w-full items-center gap-3
+              rounded-lg px-3 py-2.5
+              text-sm font-medium transition
+
+              ${
+                theme === "dark"
+                  ? "text-zinc-400 hover:bg-red-950/40 hover:text-red-400"
+                  : "text-gray-600 hover:bg-red-50 hover:text-red-600"
+              }
+            `}
+          >
+            <LogOut size={18} />
+
+            <span>Logout</span>
+          </button>
+
+          <p
+            className={`
+              mt-3 text-center text-xs
+              ${
+                theme === "dark"
+                  ? "text-zinc-700"
+                  : "text-gray-400"
+              }
+            `}
+          >
+            GATE CSE Tracker
+          </p>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+export default Sidebar;
