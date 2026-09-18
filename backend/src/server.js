@@ -24,7 +24,7 @@ CORS
 // PUT YOUR ACTUAL VERCEL FRONTEND URL HERE
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://YOUR-APP.vercel.app",
+  "https://gateex.vercel.app",
 ];
 
 app.use(
