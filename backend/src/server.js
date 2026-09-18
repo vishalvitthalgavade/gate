@@ -17,16 +17,47 @@ const PORT = process.env.PORT || 5000;
 
 /*
 ====================================================
-MIDDLEWARE
+CORS
 ====================================================
 */
 
+// PUT YOUR ACTUAL VERCEL FRONTEND URL HERE
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://YOUR-APP.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests without an Origin header
+      // such as server-to-server requests.
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.error("CORS blocked origin:", origin);
+
+      return callback(
+        new Error("Not allowed by CORS")
+      );
+    },
+
+    // Required for your HttpOnly refresh-token cookie
     credentials: true,
   })
 );
+
+
+/*
+====================================================
+MIDDLEWARE
+====================================================
+*/
 
 app.use(express.json());
 
@@ -113,7 +144,7 @@ async function startServer() {
 
     app.listen(PORT, () => {
       console.log(
-        `GATE CSE API running on http://localhost:${PORT}`
+        `GATE CSE API running on port ${PORT}`
       );
     });
   } catch (error) {
