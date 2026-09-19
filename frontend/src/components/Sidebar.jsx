@@ -9,6 +9,8 @@ import {
   LogOut,
   Sun,
   Moon,
+  Settings,
+  User,
 } from "lucide-react";
 
 import { useTheme } from "../context/ThemeContext";
@@ -59,6 +61,11 @@ function Sidebar({ isOpen, setIsOpen }) {
 
     setIsOpen(false);
     navigate("/login", { replace: true });
+  }
+
+  function openSettings() {
+    setIsOpen(false);
+    navigate("/settings");
   }
 
   return (
@@ -170,7 +177,6 @@ function Sidebar({ isOpen, setIsOpen }) {
                 }
               >
                 <Icon size={20} />
-
                 <span>{item.name}</span>
               </NavLink>
             );
@@ -188,45 +194,89 @@ function Sidebar({ isOpen, setIsOpen }) {
             }
           `}
         >
-          {/* User */}
+          {/* Clickable User / Settings */}
           {user && (
-            <div
+            <button
+              type="button"
+              onClick={openSettings}
               className={`
-                mb-3 rounded-lg px-3 py-3
+                mb-3 flex w-full items-center gap-3 rounded-xl
+                border px-3 py-3 text-left transition
 
                 ${
                   theme === "dark"
-                    ? "bg-zinc-900/70"
-                    : "bg-gray-100"
+                    ? "border-zinc-800 bg-zinc-900/70 hover:border-purple-500/30 hover:bg-zinc-900"
+                    : "border-gray-200 bg-gray-100 hover:border-purple-200 hover:bg-purple-50"
                 }
               `}
             >
-              <p
+              <div
                 className={`
-                  truncate text-sm font-semibold
-                  ${
-                    theme === "dark"
-                      ? "text-white"
-                      : "text-gray-900"
-                  }
-                `}
-              >
-                {user.name}
-              </p>
+                  flex h-10 w-10 shrink-0 items-center justify-center
+                  rounded-full text-sm font-bold
 
-              <p
-                className={`
-                  mt-1 truncate text-xs
                   ${
                     theme === "dark"
-                      ? "text-zinc-500"
-                      : "text-gray-500"
+                      ? "bg-purple-600/20 text-purple-300"
+                      : "bg-purple-100 text-purple-700"
                   }
                 `}
               >
-                {user.email}
-              </p>
-            </div>
+                {user.name?.trim()?.charAt(0)?.toUpperCase() || (
+                  <User size={18} />
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`
+                    truncate text-sm font-semibold
+                    ${
+                      theme === "dark"
+                        ? "text-white"
+                        : "text-gray-900"
+                    }
+                  `}
+                >
+                  {user.name}
+                </p>
+
+                <p
+                  className={`
+                    mt-0.5 truncate text-xs
+                    ${
+                      theme === "dark"
+                        ? "text-zinc-500"
+                        : "text-gray-500"
+                    }
+                  `}
+                >
+                  {user.email}
+                </p>
+
+                <p
+                  className={`
+                    mt-1 text-[10px] font-medium
+                    ${
+                      theme === "dark"
+                        ? "text-purple-400"
+                        : "text-purple-600"
+                    }
+                  `}
+                >
+                  Account Settings
+                </p>
+              </div>
+
+              <Settings
+                size={17}
+                className={
+                  theme === "dark"
+                    ? "shrink-0 text-zinc-500"
+                    : "shrink-0 text-gray-400"
+                }
+              />
+            </button>
           )}
 
           {/* Theme Toggle */}
@@ -252,13 +302,10 @@ function Sidebar({ isOpen, setIsOpen }) {
               )}
 
               <span>
-                {theme === "dark"
-                  ? "Dark Mode"
-                  : "Light Mode"}
+                {theme === "dark" ? "Dark Mode" : "Light Mode"}
               </span>
             </div>
 
-            {/* Toggle */}
             <div
               className={`
                 relative h-6 w-11
@@ -303,7 +350,6 @@ function Sidebar({ isOpen, setIsOpen }) {
             `}
           >
             <LogOut size={18} />
-
             <span>Logout</span>
           </button>
 

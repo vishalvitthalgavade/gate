@@ -86,10 +86,13 @@ function clearRefreshCookie(res) {
     REFRESH_COOKIE_NAME,
     {
       httpOnly: true,
+
       sameSite: "lax",
+
       secure:
         process.env.NODE_ENV ===
         "production",
+
       path: "/api/auth",
     }
   );
@@ -161,6 +164,7 @@ async function signup(req, res) {
             },
           },
         },
+
         select: {
           id: true,
           name: true,
@@ -626,10 +630,292 @@ async function me(req, res) {
   }
 }
 
+/*
+====================================================
+UPDATE PROFILE
+====================================================
+
+Only the NAME can be changed.
+
+The EMAIL is intentionally not accepted
+from the request.
+
+This prevents the Settings page from
+changing the account email.
+====================================================
+*/
+
+async function updateProfile(req, res) {
+  try {
+    const { name } = req.body;
+
+    /*
+      Name is required.
+    */
+
+    if (
+      typeof name !== "string" ||
+      !name.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name is required.",
+      });
+    }
+
+    const trimmedName =
+      name.trim();
+
+    /*
+      Basic name validation.
+    */
+
+    if (trimmedName.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name must be at least 2 characters.",
+      });
+    }
+
+    if (trimmedName.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name cannot exceed 100 characters.",
+      });
+    }
+
+    /*
+      Update only the name.
+
+      Email is NOT updated.
+    */
+
+    const user =
+      await prisma.user.update({
+        where: {
+          id: req.user.userId,
+        },
+
+        data: {
+          name: trimmedName,
+        },
+
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+        },
+      });
+
+    return res.json({
+      success: true,
+      message:
+        "Profile updated successfully.",
+      user,
+    });
+  } catch (error) {
+    console.error(
+      "Update profile error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Could not update profile.",
+    });
+  }
+}
+
+/*
+====================================================
+CHANGE PASSWORD
+====================================================
+
+Requires:
+
+1. Current password
+2. New password
+
+The current password is verified first.
+
+The new password is hashed with bcrypt
+before being stored in the database.
+
+Plain-text passwords are NEVER stored.
+====================================================
+*/
+
+async function changePassword(req, res) {
+  try {
+    const {
+      currentPassword,
+      newPassword,
+    } = req.body;
+
+    /*
+      Validate required fields.
+    */
+
+    if (
+      typeof currentPassword !== "string" ||
+      typeof newPassword !== "string" ||
+      !currentPassword ||
+      !newPassword
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Current password and new password are required.",
+      });
+    }
+
+    /*
+      Minimum password length.
+    */
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "New password must be at least 8 characters.",
+      });
+    }
+
+    /*
+      Optional maximum length to avoid
+      unnecessarily large password input.
+    */
+
+    if (newPassword.length > 128) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "New password cannot exceed 128 characters.",
+      });
+    }
+
+    /*
+      Don't allow the same password.
+    */
+
+    if (
+      currentPassword ===
+      newPassword
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "New password must be different from the current password.",
+      });
+    }
+
+    /*
+      Find the authenticated user.
+    */
+
+    const user =
+      await prisma.user.findUnique({
+        where: {
+          id: req.user.userId,
+        },
+
+        select: {
+          id: true,
+          passwordHash: true,
+        },
+      });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "User not found.",
+      });
+    }
+
+    /*
+      Verify CURRENT password.
+    */
+
+    const passwordMatches =
+      await bcrypt.compare(
+        currentPassword,
+        user.passwordHash
+      );
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Current password is incorrect.",
+      });
+    }
+
+    /*
+      Hash NEW password.
+    */
+
+    const newPasswordHash =
+      await bcrypt.hash(
+        newPassword,
+        12
+      );
+
+    /*
+      Update password in database.
+    */
+
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+
+      data: {
+        passwordHash:
+          newPasswordHash,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message:
+        "Password changed successfully.",
+    });
+  } catch (error) {
+    console.error(
+      "Change password error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Could not change password.",
+    });
+  }
+}
+
+/*
+====================================================
+EXPORTS
+====================================================
+*/
+
 module.exports = {
   signup,
   login,
   refresh,
   logout,
   me,
+
+  // Profile
+  updateProfile,
+
+  // Security
+  changePassword,
 };

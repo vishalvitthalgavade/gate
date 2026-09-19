@@ -15,6 +15,7 @@ import Heatmap from "./pages/Heatmap";
 import Syllabus from "./pages/Syllabus";
 import History from "./pages/History";
 import Statistics from "./pages/Statistics";
+import Settings from "./pages/Settings";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -23,8 +24,7 @@ import { StudyProvider } from "./context/StudyContext";
 import { AuthProvider } from "./context/AuthContext";
 
 function App() {
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <BrowserRouter>
@@ -46,7 +46,6 @@ function App() {
               element={<Signup />}
             />
 
-
             {/* ================================
                 PROTECTED APPLICATION
             ================================= */}
@@ -56,12 +55,21 @@ function App() {
                 path="/*"
                 element={
                   <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#0b1120] dark:text-white">
+
+                    {/* ================================
+                        SIDEBAR
+                    ================================= */}
+
                     <Sidebar
                       isOpen={sidebarOpen}
                       setIsOpen={setSidebarOpen}
                     />
 
                     <div className="md:ml-64">
+
+                      {/* ================================
+                          MOBILE HEADER
+                      ================================= */}
 
                       <header className="sticky top-0 z-30 flex h-16 items-center border-b border-zinc-800 bg-zinc-950/95 px-4 backdrop-blur md:hidden">
 
@@ -86,40 +94,56 @@ function App() {
 
                       </header>
 
+                      {/* ================================
+                          MAIN CONTENT
+                      ================================= */}
+
                       <main className="min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8">
 
                         <div className="mx-auto w-full max-w-7xl">
 
                           <Routes>
 
+                            {/* Dashboard */}
                             <Route
                               path="/"
                               element={<Dashboard />}
                             />
 
+                            {/* Timer */}
                             <Route
                               path="/timer"
                               element={<Timer />}
                             />
 
+                            {/* Heatmap */}
                             <Route
                               path="/heatmap"
                               element={<Heatmap />}
                             />
 
+                            {/* Syllabus */}
                             <Route
                               path="/syllabus"
                               element={<Syllabus />}
                             />
 
+                            {/* History */}
                             <Route
                               path="/history"
                               element={<History />}
                             />
 
+                            {/* Statistics */}
                             <Route
                               path="/statistics"
                               element={<Statistics />}
+                            />
+
+                            {/* Settings */}
+                            <Route
+                              path="/settings"
+                              element={<Settings />}
                             />
 
                           </Routes>

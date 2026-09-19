@@ -47,11 +47,6 @@ function buildApiUrl(path) {
 ====================================================
 SAFE STORAGE HELPERS
 ====================================================
-
-Using helper functions prevents the application
-from crashing if localStorage is temporarily
-unavailable.
-====================================================
 */
 
 function getStoredUser() {
@@ -81,16 +76,6 @@ AUTH PROVIDER
 */
 
 export function AuthProvider({ children }) {
-  /*
-  IMPORTANT:
-
-  Restore authentication directly from localStorage
-  when the PWA starts.
-
-  This means closing and reopening the installed
-  application does NOT automatically log the user out.
-  */
-
   const [user, setUser] = useState(() => {
     return getStoredUser();
   });
@@ -99,32 +84,15 @@ export function AuthProvider({ children }) {
     return getStoredToken();
   });
 
-  /*
-  If user/token already exist locally, the application
-  can immediately continue using the cached session.
-
-  This prevents the login screen from appearing briefly
-  every time the PWA is reopened.
-  */
-
   const [isLoading, setIsLoading] = useState(() => {
     return !getStoredUser() && !getStoredToken();
   });
 
-  /*
-  Prevent multiple simultaneous refresh requests.
-  */
-
   const refreshPromiseRef = useRef(null);
-
-  /*
-  Prevent the initial authentication initialization
-  from running multiple times.
-  */
 
   const initializedRef = useRef(false);
 
-  /*
+/*
 ====================================================
 SAVE AUTH DATA
 ====================================================
@@ -164,16 +132,9 @@ SAVE AUTH DATA
     }
   }
 
-  /*
+/*
 ====================================================
 CLEAR AUTH
-====================================================
-
-Only call this when authentication is genuinely
-invalid or the user explicitly logs out.
-
-Do NOT call this merely because the application
-cannot reach the server temporarily.
 ====================================================
 */
 
@@ -195,30 +156,15 @@ cannot reach the server temporarily.
     }
   }
 
-  /*
+/*
 ====================================================
 REFRESH SESSION
-====================================================
-
-The refresh token is stored inside an HttpOnly
-cookie by the backend.
-
-JavaScript cannot read that cookie.
-
-The browser sends it through:
-
-credentials: "include"
 ====================================================
 */
 
   async function refreshSession({
     clearOnInvalid = true,
   } = {}) {
-    /*
-    Reuse an existing refresh request instead of
-    creating multiple refresh requests.
-    */
-
     if (refreshPromiseRef.current) {
       return refreshPromiseRef.current;
     }
@@ -230,11 +176,6 @@ credentials: "include"
             buildApiUrl("/auth/refresh"),
             {
               method: "POST",
-
-              /*
-              Sends the HttpOnly refresh cookie.
-              */
-
               credentials: "include",
 
               headers: {
@@ -242,17 +183,6 @@ credentials: "include"
               },
             }
           );
-
-          /*
-          A 401/403 means the refresh session is
-          genuinely invalid.
-
-          During normal API usage we clear authentication.
-
-          During startup we can preserve cached login
-          so a temporary cookie/network problem does
-          not throw the user back to Login.
-          */
 
           if (
             response.status === 401 ||
@@ -264,13 +194,6 @@ credentials: "include"
 
             return false;
           }
-
-          /*
-          Server error.
-
-          IMPORTANT:
-          Do NOT delete the locally cached login.
-          */
 
           if (!response.ok) {
             console.warn(
@@ -287,12 +210,6 @@ credentials: "include"
           const data =
             await response.json();
 
-          /*
-          If backend says refresh failed,
-          preserve cached authentication during
-          startup instead of immediately logging out.
-          */
-
           if (!data?.success) {
             if (clearOnInvalid) {
               return false;
@@ -304,27 +221,10 @@ credentials: "include"
             );
           }
 
-          /*
-          Refresh succeeded.
-          Save the new access token and user.
-          */
-
           saveAuth(data);
 
           return true;
         } catch (error) {
-          /*
-          Network unavailable.
-
-          IMPORTANT:
-
-          Do NOT destroy the cached authentication.
-
-          This is especially important for an installed
-          PWA because the application may start before
-          the network connection is available.
-          */
-
           console.warn(
             "Refresh unavailable:",
             error?.message
@@ -342,23 +242,9 @@ credentials: "include"
     return refreshPromiseRef.current;
   }
 
-  /*
+/*
 ====================================================
 INITIAL AUTH CHECK
-====================================================
-
-This is the most important change.
-
-We restore local authentication first.
-
-We DO NOT immediately delete the local session if
-the refresh cookie is unavailable.
-
-If an access token exists, the user can continue
-using the application.
-
-If the token later expires, authFetch() will perform
-a refresh automatically.
 ====================================================
 */
 
@@ -375,37 +261,12 @@ a refresh automatically.
       const storedUser = getStoredUser();
       const storedToken = getStoredToken();
 
-      /*
-      ------------------------------------------------
-      CASE 1:
-      Cached authentication exists.
-
-      Restore it immediately.
-
-      Do NOT force a refresh just because the PWA
-      was reopened.
-      ------------------------------------------------
-      */
-
       if (storedUser || storedToken) {
         if (mounted) {
           setUser(storedUser);
           setAccessToken(storedToken);
           setIsLoading(false);
         }
-
-        /*
-        -----------------------------------------------
-        OPTIONAL BACKGROUND REFRESH
-
-        Try refreshing silently.
-
-        But NEVER clear the cached authentication
-        simply because this background refresh fails.
-
-        This is important for installed PWA behavior.
-        -----------------------------------------------
-        */
 
         if (navigator.onLine) {
           refreshSession({
@@ -420,16 +281,6 @@ a refresh automatically.
 
         return;
       }
-
-      /*
-      ------------------------------------------------
-      CASE 2:
-      No cached login exists.
-
-      Try to recover a session from the backend
-      refresh cookie.
-      ------------------------------------------------
-      */
 
       if (navigator.onLine) {
         await refreshSession({
@@ -449,7 +300,7 @@ a refresh automatically.
     };
   }, []);
 
-  /*
+/*
 ====================================================
 SIGNUP
 ====================================================
@@ -464,7 +315,6 @@ SIGNUP
       buildApiUrl("/auth/signup"),
       {
         method: "POST",
-
         credentials: "include",
 
         headers: {
@@ -490,16 +340,12 @@ SIGNUP
       );
     }
 
-    /*
-    Save login locally after successful signup.
-    */
-
     saveAuth(data);
 
     return data;
   }
 
-  /*
+/*
 ====================================================
 LOGIN
 ====================================================
@@ -513,7 +359,6 @@ LOGIN
       buildApiUrl("/auth/login"),
       {
         method: "POST",
-
         credentials: "include",
 
         headers: {
@@ -538,20 +383,106 @@ LOGIN
       );
     }
 
-    /*
-    IMPORTANT:
-
-    Save the access token and user immediately.
-
-    They survive closing/reopening the PWA.
-    */
-
     saveAuth(data);
 
     return data;
   }
 
-  /*
+/*
+====================================================
+UPDATE PROFILE
+====================================================
+
+Updates the user's NAME only.
+
+The email address is intentionally not sent,
+so the email remains read-only.
+====================================================
+*/
+
+  async function updateProfile(name) {
+    const response = await authFetch(
+      "/auth/profile",
+      {
+        method: "PUT",
+
+        body: JSON.stringify({
+          name,
+        }),
+      }
+    );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          "Could not update profile."
+      );
+    }
+
+    /*
+    Backend returns the updated user.
+
+    Save it locally so:
+    - Settings page updates
+    - Sidebar updates immediately
+    - PWA retains the new name
+    */
+
+    if (data?.user) {
+      saveAuth({
+        user: data.user,
+      });
+    }
+
+    return data;
+  }
+
+/*
+====================================================
+CHANGE PASSWORD
+====================================================
+
+Requires:
+- Current password
+- New password
+
+The backend verifies the current password.
+====================================================
+*/
+
+  async function changePassword(
+    currentPassword,
+    newPassword
+  ) {
+    const response = await authFetch(
+      "/auth/change-password",
+      {
+        method: "PUT",
+
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      }
+    );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          "Could not change password."
+      );
+    }
+
+    return data;
+  }
+
+/*
 ====================================================
 LOGOUT
 ====================================================
@@ -563,12 +494,6 @@ LOGOUT
         buildApiUrl("/auth/logout"),
         {
           method: "POST",
-
-          /*
-          Sends refresh cookie so backend can revoke
-          the authentication session.
-          */
-
           credentials: "include",
 
           headers: {
@@ -577,26 +502,16 @@ LOGOUT
         }
       );
     } catch (error) {
-      /*
-      Local logout must still happen if the device
-      is offline.
-      */
-
       console.warn(
         "Logout request unavailable:",
         error?.message
       );
     }
 
-    /*
-    Explicit logout is the ONLY normal action that
-    should definitely remove the local login.
-    */
-
     clearAuth();
   }
 
-  /*
+/*
 ====================================================
 AUTHENTICATED FETCH
 ====================================================
@@ -610,18 +525,8 @@ AUTHENTICATED FETCH
       accessToken ||
       getStoredToken();
 
-    /*
-    Build complete API URL.
-    */
-
     const fullUrl =
       buildApiUrl(url);
-
-    /*
-    ------------------------------------------------
-    REQUEST FUNCTION
-    ------------------------------------------------
-    */
 
     async function makeRequest(
       currentToken
@@ -631,21 +536,12 @@ AUTHENTICATED FETCH
           options.headers || {}
         );
 
-      /*
-      Add access token.
-      */
-
       if (currentToken) {
         headers.set(
           "Authorization",
           `Bearer ${currentToken}`
         );
       }
-
-      /*
-      Automatically add JSON content type when
-      a request body exists.
-      */
 
       if (
         options.body &&
@@ -667,35 +563,13 @@ AUTHENTICATED FETCH
         {
           ...options,
           headers,
-
-          /*
-          Required for HttpOnly refresh cookie.
-          */
-
           credentials: "include",
         }
       );
     }
 
-    /*
-    ------------------------------------------------
-    FIRST REQUEST
-    ------------------------------------------------
-    */
-
     let response =
       await makeRequest(token);
-
-    /*
-    ------------------------------------------------
-    ACCESS TOKEN EXPIRED
-    ------------------------------------------------
-
-    If backend returns 401, attempt to refresh the
-    access token.
-
-    ------------------------------------------------
-    */
 
     if (response.status === 401) {
       const refreshed =
@@ -715,15 +589,9 @@ AUTHENTICATED FETCH
     return response;
   }
 
-  /*
+/*
 ====================================================
 ONLINE EVENT
-====================================================
-
-When internet connection returns, silently refresh
-the access token.
-
-Do not log the user out just because refresh fails.
 ====================================================
 */
 
@@ -757,7 +625,7 @@ Do not log the user out just because refresh fails.
     };
   }, []);
 
-  /*
+/*
 ====================================================
 CONTEXT VALUE
 ====================================================
@@ -782,6 +650,13 @@ CONTEXT VALUE
     refreshSession,
 
     authFetch,
+
+    /*
+    Profile / Security
+    */
+    updateProfile,
+
+    changePassword,
   };
 
   return (
