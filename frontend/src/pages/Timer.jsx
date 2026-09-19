@@ -437,11 +437,7 @@ function Timer() {
   */
   useEffect(() => {
     checkActiveTimer();
-  }, []);() {
-    await activeStudyRequest(
-      "/sessions/active/stop"
-    );
-  }
+  }, []);
 
   /* -------------------------
      TIMER MODE
