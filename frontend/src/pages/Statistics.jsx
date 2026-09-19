@@ -511,16 +511,16 @@ export default function Statistics() {
   if (sessions.length === 0) {
     return (
       <div
-        className={`min-h-screen p-4 transition-colors duration-200 sm:p-6 lg:p-8 ${pageBg}`}
+        className={`min-h-screen overflow-x-hidden px-3 py-4 transition-colors duration-200 sm:p-6 lg:p-8 ${pageBg}`}
       >
         <div className="mx-auto max-w-7xl">
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <p className="text-sm font-medium text-indigo-500">
               GATE CSE
             </p>
 
             <h1
-              className={`mt-1 text-3xl font-bold ${heading}`}
+              className={`mt-1 text-2xl font-bold sm:text-3xl ${heading}`}
             >
               Study Analytics
             </h1>
@@ -532,7 +532,7 @@ export default function Statistics() {
           </div>
 
           <div
-            className={`rounded-2xl border p-10 text-center shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`rounded-2xl border p-6 text-center shadow-sm transition-colors duration-200 sm:p-10 ${cardBg} ${cardBorder}`}
           >
             <BarChart3
               className={`mx-auto mb-4 ${
@@ -563,17 +563,19 @@ export default function Statistics() {
 
   return (
     <div
-      className={`min-h-screen p-4 transition-colors duration-200 sm:p-6 lg:p-8 ${pageBg}`}
+      className={`min-h-screen overflow-x-hidden px-3 py-4 transition-colors duration-200 sm:p-6 lg:p-8 ${pageBg}`}
     >
       <div className="mx-auto max-w-7xl">
 
         {/* HEADER */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2 text-indigo-500">
-              <BarChart3 size={19} />
+              <span className="rounded-lg bg-indigo-500/10 p-1.5">
+                <BarChart3 size={18} />
+              </span>
 
-              <span className="text-sm font-semibold">
+              <span className="text-xs font-semibold tracking-wide sm:text-sm">
                 STUDY ANALYTICS
               </span>
             </div>
@@ -584,15 +586,14 @@ export default function Statistics() {
               Your Study Insights
             </h1>
 
-            <p className={`mt-2 ${mutedText}`}>
-              Understand how consistently and efficiently
-              you are preparing for GATE.
+            <p className={`mt-2 max-w-2xl text-sm leading-5 sm:text-base ${mutedText}`}>
+              Understand how consistently and efficiently you are preparing for GATE.
             </p>
           </div>
 
           {/* RANGE SELECTOR */}
           <div
-            className={`flex w-fit rounded-xl border p-1 shadow-sm ${
+            className={`grid w-full grid-cols-2 rounded-xl border p-1 shadow-sm sm:flex sm:w-fit ${
               isDark
                 ? "border-zinc-700 bg-zinc-900"
                 : "border-gray-200 bg-white"
@@ -601,7 +602,7 @@ export default function Statistics() {
             <button
               type="button"
               onClick={() => setRange("7")}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`rounded-lg px-3 py-2.5 text-xs font-semibold transition sm:px-4 sm:py-2 sm:text-sm ${
                 range === "7"
                   ? isDark
                     ? "bg-white text-zinc-900"
@@ -617,7 +618,7 @@ export default function Statistics() {
             <button
               type="button"
               onClick={() => setRange("30")}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`rounded-lg px-3 py-2.5 text-xs font-semibold transition sm:px-4 sm:py-2 sm:text-sm ${
                 range === "30"
                   ? isDark
                     ? "bg-white text-zinc-900"
@@ -633,20 +634,20 @@ export default function Statistics() {
         </div>
 
         {/* INSIGHT STRIP */}
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
 
           {/* TOTAL STUDY */}
           <div
-            className={`rounded-2xl border p-5 shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`group rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${cardBg} ${cardBorder}`}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm ${mutedText}`}>
+                <p className={`text-xs leading-4 sm:text-sm ${mutedText}`}>
                   Total Study Time
                 </p>
 
                 <p
-                  className={`mt-2 text-2xl font-bold ${heading}`}
+                  className={`mt-1.5 text-xl font-bold sm:mt-2 sm:text-2xl ${heading}`}
                 >
                   {formatStudyTime(
                     basicStats.totalSeconds
@@ -655,7 +656,7 @@ export default function Statistics() {
               </div>
 
               <div
-                className={`rounded-xl p-3 ${
+                className={`rounded-xl p-2.5 transition-transform duration-200 group-hover:scale-105 sm:p-3 ${
                   isDark
                     ? "bg-indigo-950 text-indigo-400"
                     : "bg-indigo-50 text-indigo-600"
@@ -668,23 +669,23 @@ export default function Statistics() {
 
           {/* STUDY DAYS */}
           <div
-            className={`rounded-2xl border p-5 shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`group rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${cardBg} ${cardBorder}`}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm ${mutedText}`}>
+                <p className={`text-xs leading-4 sm:text-sm ${mutedText}`}>
                   Active Study Days
                 </p>
 
                 <p
-                  className={`mt-2 text-2xl font-bold ${heading}`}
+                  className={`mt-1.5 text-xl font-bold sm:mt-2 sm:text-2xl ${heading}`}
                 >
                   {basicStats.studyDays}
                 </p>
               </div>
 
               <div
-                className={`rounded-xl p-3 ${
+                className={`rounded-xl p-2.5 transition-transform duration-200 group-hover:scale-105 sm:p-3 ${
                   isDark
                     ? "bg-blue-950 text-blue-400"
                     : "bg-blue-50 text-blue-600"
@@ -697,16 +698,16 @@ export default function Statistics() {
 
           {/* CURRENT STREAK */}
           <div
-            className={`rounded-2xl border p-5 shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`group rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${cardBg} ${cardBorder}`}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm ${mutedText}`}>
+                <p className={`text-xs leading-4 sm:text-sm ${mutedText}`}>
                   Current Streak
                 </p>
 
                 <p
-                  className={`mt-2 text-2xl font-bold ${heading}`}
+                  className={`mt-1.5 text-xl font-bold sm:mt-2 sm:text-2xl ${heading}`}
                 >
                   {currentStreak}{" "}
                   <span
@@ -718,7 +719,7 @@ export default function Statistics() {
               </div>
 
               <div
-                className={`rounded-xl p-3 ${
+                className={`rounded-xl p-2.5 transition-transform duration-200 group-hover:scale-105 sm:p-3 ${
                   isDark
                     ? "bg-orange-950 text-orange-400"
                     : "bg-orange-50 text-orange-500"
@@ -773,7 +774,7 @@ export default function Statistics() {
               isDark ? "bg-zinc-900" : "bg-white"
             }`}
           >
-            <div className="h-[320px] w-full sm:h-[380px]">
+            <div className="h-[270px] w-full sm:h-[380px]">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
@@ -806,7 +807,7 @@ export default function Statistics() {
                     }}
                     tickLine={false}
                     axisLine={false}
-                    minTickGap={20}
+                    minTickGap={16}
                   />
 
                   <YAxis
@@ -822,7 +823,7 @@ export default function Statistics() {
                     }}
                     tickLine={false}
                     axisLine={false}
-                    width={55}
+                    width={46}
                   />
 
                   <Tooltip
@@ -873,15 +874,15 @@ export default function Statistics() {
         </section>
 
         {/* QUICK INSIGHTS */}
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
 
           {/* AVERAGE */}
           <div
-            className={`rounded-2xl border p-5 shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`group rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${cardBg} ${cardBorder}`}
           >
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-3 flex items-center gap-2.5 sm:mb-4 sm:gap-3">
               <div
-                className={`rounded-lg p-2 ${
+                className={`shrink-0 rounded-lg p-2 transition-transform duration-200 group-hover:scale-105 ${
                   isDark
                     ? "bg-purple-950 text-purple-400"
                     : "bg-purple-50 text-purple-600"
@@ -891,14 +892,14 @@ export default function Statistics() {
               </div>
 
               <span
-                className={`text-sm font-medium ${mutedText}`}
+                className={`text-xs font-medium leading-4 sm:text-sm ${mutedText}`}
               >
                 Average Session
               </span>
             </div>
 
             <p
-              className={`text-xl font-bold ${heading}`}
+              className={`text-lg font-bold sm:text-xl ${heading}`}
             >
               {formatStudyTime(
                 basicStats.averageSession
@@ -908,11 +909,11 @@ export default function Statistics() {
 
           {/* LONGEST */}
           <div
-            className={`rounded-2xl border p-5 shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`group rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${cardBg} ${cardBorder}`}
           >
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-3 flex items-center gap-2.5 sm:mb-4 sm:gap-3">
               <div
-                className={`rounded-lg p-2 ${
+                className={`shrink-0 rounded-lg p-2 transition-transform duration-200 group-hover:scale-105 ${
                   isDark
                     ? "bg-green-950 text-green-400"
                     : "bg-green-50 text-green-600"
@@ -922,14 +923,14 @@ export default function Statistics() {
               </div>
 
               <span
-                className={`text-sm font-medium ${mutedText}`}
+                className={`text-xs font-medium leading-4 sm:text-sm ${mutedText}`}
               >
                 Longest Session
               </span>
             </div>
 
             <p
-              className={`text-xl font-bold ${heading}`}
+              className={`text-lg font-bold sm:text-xl ${heading}`}
             >
               {formatStudyTime(
                 basicStats.longestSession
@@ -939,11 +940,11 @@ export default function Statistics() {
 
           {/* LONGEST STREAK */}
           <div
-            className={`rounded-2xl border p-5 shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`group rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${cardBg} ${cardBorder}`}
           >
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-3 flex items-center gap-2.5 sm:mb-4 sm:gap-3">
               <div
-                className={`rounded-lg p-2 ${
+                className={`shrink-0 rounded-lg p-2 transition-transform duration-200 group-hover:scale-105 ${
                   isDark
                     ? "bg-orange-950 text-orange-400"
                     : "bg-orange-50 text-orange-500"
@@ -953,18 +954,18 @@ export default function Statistics() {
               </div>
 
               <span
-                className={`text-sm font-medium ${mutedText}`}
+                className={`text-xs font-medium leading-4 sm:text-sm ${mutedText}`}
               >
                 Longest Streak
               </span>
             </div>
 
             <p
-              className={`text-xl font-bold ${heading}`}
+              className={`text-lg font-bold sm:text-xl ${heading}`}
             >
               {longestStreak}{" "}
               <span
-                className={`text-sm font-medium ${mutedText}`}
+                className={`text-xs font-medium leading-4 sm:text-sm ${mutedText}`}
               >
                 days
               </span>
@@ -973,11 +974,11 @@ export default function Statistics() {
 
           {/* BEST DAY */}
           <div
-            className={`rounded-2xl border p-5 shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`group rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${cardBg} ${cardBorder}`}
           >
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-3 flex items-center gap-2.5 sm:mb-4 sm:gap-3">
               <div
-                className={`rounded-lg p-2 ${
+                className={`shrink-0 rounded-lg p-2 transition-transform duration-200 group-hover:scale-105 ${
                   isDark
                     ? "bg-blue-950 text-blue-400"
                     : "bg-blue-50 text-blue-600"
@@ -987,14 +988,14 @@ export default function Statistics() {
               </div>
 
               <span
-                className={`text-sm font-medium ${mutedText}`}
+                className={`text-xs font-medium leading-4 sm:text-sm ${mutedText}`}
               >
                 Best Day
               </span>
             </div>
 
             <p
-              className={`text-xl font-bold ${heading}`}
+              className={`text-lg font-bold sm:text-xl ${heading}`}
             >
               {bestDay
                 ? formatStudyTime(bestDay.seconds)
@@ -1010,14 +1011,14 @@ export default function Statistics() {
         </div>
 
         {/* SUBJECT + TIMER */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
 
           {/* SUBJECT BREAKDOWN */}
           <section
-            className={`rounded-2xl border shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`overflow-hidden rounded-2xl border shadow-sm transition-all duration-200 hover:shadow-md ${cardBg} ${cardBorder}`}
           >
             <div
-              className={`border-b px-6 py-5 ${divider}`}
+              className={`border-b px-4 py-4 sm:px-6 sm:py-5 ${divider}`}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -1032,7 +1033,7 @@ export default function Statistics() {
 
                 <div>
                   <h2
-                    className={`font-bold ${heading}`}
+                    className={`text-base font-bold sm:text-lg ${heading}`}
                   >
                     Subject Breakdown
                   </h2>
@@ -1044,7 +1045,7 @@ export default function Statistics() {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {subjectStats.length === 0 ? (
                 <p className={`text-sm ${mutedText}`}>
                   No subject data available.
@@ -1124,10 +1125,10 @@ export default function Statistics() {
 
           {/* TIMER USAGE */}
           <section
-            className={`rounded-2xl border shadow-sm transition-colors duration-200 ${cardBg} ${cardBorder}`}
+            className={`overflow-hidden rounded-2xl border shadow-sm transition-all duration-200 hover:shadow-md ${cardBg} ${cardBorder}`}
           >
             <div
-              className={`border-b px-6 py-5 ${divider}`}
+              className={`border-b px-4 py-4 sm:px-6 sm:py-5 ${divider}`}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -1142,7 +1143,7 @@ export default function Statistics() {
 
                 <div>
                   <h2
-                    className={`font-bold ${heading}`}
+                    className={`text-base font-bold sm:text-lg ${heading}`}
                   >
                     Timer Usage
                   </h2>
@@ -1154,7 +1155,7 @@ export default function Statistics() {
               </div>
             </div>
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-5 p-4 sm:space-y-6 sm:p-6">
 
               {/* POMODORO */}
               <div>

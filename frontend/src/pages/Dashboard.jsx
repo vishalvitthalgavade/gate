@@ -315,25 +315,25 @@ function Dashboard() {
 
 
   return (
-    <div className="w-full bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-[#0b1120] dark:text-white">
+    <div className="w-full overflow-x-hidden bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-[#0b1120] dark:text-white">
 
       {/* =====================================================
           HEADER
       ===================================================== */}
 
-      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
 
         <div>
 
-          <p className="mb-2 text-sm text-gray-500 dark:text-zinc-500">
+          <p className="mb-1.5 text-xs text-gray-500 dark:text-zinc-500 sm:mb-2 sm:text-sm">
             {currentDate}
           </p>
 
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
             Dashboard
           </h1>
 
-          <p className="mt-2 text-sm text-gray-500 dark:text-zinc-500 sm:text-base">
+          <p className="mt-1.5 max-w-md text-xs leading-5 text-gray-500 dark:text-zinc-500 sm:mt-2 sm:text-base">
             Track your GATE CSE preparation.
           </p>
 
@@ -341,7 +341,7 @@ function Dashboard() {
 
         <Link
           to="/timer"
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-purple-500 sm:w-auto"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-600/20 transition hover:bg-purple-500 active:scale-[0.98] sm:w-auto"
         >
           <Play size={18} />
           Start Studying
@@ -354,7 +354,7 @@ function Dashboard() {
           STAT CARDS
       ===================================================== */}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
 
         <StatCard
           icon={Clock}
@@ -407,30 +407,30 @@ function Dashboard() {
 
         {/* SYLLABUS */}
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-6 lg:col-span-2">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-6 lg:col-span-2">
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-3">
 
             <div>
 
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
                 Syllabus Progress
               </h2>
 
-              <p className="mt-1 text-sm text-gray-500 dark:text-zinc-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-zinc-500 sm:text-sm">
                 Overall GATE CSE preparation
               </p>
 
             </div>
 
-            <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            <span className="shrink-0 text-xl font-bold text-purple-600 dark:text-purple-400 sm:text-2xl">
               {syllabusStats.percentage}%
             </span>
 
           </div>
 
 
-          <div className="mt-5 h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-800">
+          <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-800 sm:mt-5 sm:h-3">
 
             <div
               className="h-full rounded-full bg-purple-600 transition-all duration-500"
@@ -459,7 +459,7 @@ function Dashboard() {
 
           <Link
             to="/syllabus"
-            className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+            className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-xs font-medium text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 active:scale-[0.98] dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white sm:mt-6 sm:text-sm"
           >
             Open Syllabus
             <ArrowRight size={16} />
@@ -470,11 +470,11 @@ function Dashboard() {
 
         {/* STREAK */}
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-6">
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
 
-            <div className="rounded-xl bg-orange-500/10 p-3">
+            <div className="shrink-0 rounded-xl bg-orange-500/10 p-2.5 sm:p-3">
               <Flame
                 size={22}
                 className="text-orange-400"
@@ -483,11 +483,11 @@ function Dashboard() {
 
             <div>
 
-              <h2 className="font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white sm:text-base">
                 Study Streak
               </h2>
 
-              <p className="text-xs text-gray-500 dark:text-zinc-500">
+              <p className="text-[11px] text-gray-500 dark:text-zinc-500 sm:text-xs">
                 Keep it going!
               </p>
 
@@ -496,9 +496,9 @@ function Dashboard() {
           </div>
 
 
-          <div className="mt-8">
+          <div className="mt-6 sm:mt-8">
 
-            <p className="text-5xl font-bold text-gray-900 dark:text-white">
+            <p className="text-4xl font-bold text-gray-900 dark:text-white sm:text-5xl">
               {currentStreak}
             </p>
 
@@ -514,7 +514,7 @@ function Dashboard() {
 
           <Link
             to="/heatmap"
-            className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-3 text-sm font-medium text-gray-800 transition hover:bg-gray-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+            className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-3 text-xs font-medium text-gray-800 transition hover:bg-gray-200 active:scale-[0.98] dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700 sm:mt-8 sm:text-sm"
           >
             View Heatmap
             <ArrowRight size={16} />
@@ -529,17 +529,17 @@ function Dashboard() {
           TODAY'S SESSIONS
       ===================================================== */}
 
-      <div className="mt-6 rounded-2xl border border-gray-200 bg-white shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/40">
+      <div className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/40 sm:mt-6">
 
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-5 dark:border-zinc-800 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-4 dark:border-zinc-800 sm:px-6 sm:py-5">
 
           <div>
 
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
               Today's Sessions
             </h2>
 
-            <p className="mt-1 text-sm text-gray-500 dark:text-zinc-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-zinc-500 sm:text-sm">
               Your study activity today
             </p>
 
@@ -547,7 +547,7 @@ function Dashboard() {
 
           <Link
             to="/history"
-            className="flex items-center gap-1 text-sm text-purple-600 transition hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+            className="flex shrink-0 items-center gap-1 text-xs font-medium text-purple-600 transition hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300 sm:text-sm"
           >
             View All
             <ArrowRight size={15} />
@@ -558,7 +558,7 @@ function Dashboard() {
 
         {recentTodaySessions.length === 0 ? (
 
-          <div className="px-5 py-12 text-center sm:px-6">
+          <div className="px-4 py-10 text-center sm:px-6 sm:py-12">
 
             <Clock
               size={32}
@@ -576,7 +576,7 @@ function Dashboard() {
 
             <Link
               to="/timer"
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-xs font-medium text-white shadow-md shadow-purple-600/20 hover:bg-purple-500 active:scale-[0.98] sm:text-sm"
             >
               <Play size={15} />
               Start Timer
@@ -603,19 +603,19 @@ function Dashboard() {
                       session.id ||
                       session.clientId
                     }
-                    className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+                    className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4"
                   >
 
                     <div className="min-w-0">
 
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
 
-                        <span className="rounded-md bg-purple-500/10 px-2 py-1 text-xs font-medium text-purple-600 dark:text-purple-400">
+                        <span className="rounded-md bg-purple-500/10 px-2 py-1 text-[11px] font-medium text-purple-600 dark:text-purple-400 sm:text-xs">
                           {session.type ||
                             "Study"}
                         </span>
 
-                        <span className="text-xs text-gray-400 dark:text-zinc-600">
+                        <span className="text-[11px] text-gray-400 dark:text-zinc-600 sm:text-xs">
                           {formatSessionTime(
                             getSessionDate(
                               session
@@ -636,7 +636,7 @@ function Dashboard() {
                       </div>
 
 
-                      <p className="mt-2 truncate text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="mt-2 truncate text-sm font-semibold text-gray-900 dark:text-white">
                         {session.subject ||
                           "No subject"}
                       </p>
@@ -649,7 +649,7 @@ function Dashboard() {
                     </div>
 
 
-                    <div className="text-left sm:text-right">
+                    <div className="flex items-center justify-between border-t border-gray-100 pt-3 dark:border-zinc-800 sm:block sm:border-0 sm:pt-0 sm:text-right">
 
                       <p className="text-sm font-semibold text-gray-900 dark:text-white">
                         {formatStudyTime(
@@ -682,10 +682,10 @@ function Dashboard() {
           SYNC STATUS
       ===================================================== */}
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex justify-end px-0.5 pb-1 sm:px-0">
 
         <div
-          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
+          className={`flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs sm:w-auto ${
             isOnline
               ? "border-green-500/20 bg-green-500/10 text-green-500 dark:text-green-400"
               : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500 dark:text-yellow-400"
@@ -722,11 +722,11 @@ function StatCard({
   description,
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/40">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-5">
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3">
 
-        <div className="rounded-xl bg-purple-500/10 p-3">
+        <div className="shrink-0 rounded-xl bg-purple-500/10 p-2.5 sm:p-3">
 
           <Icon
             size={21}
@@ -735,14 +735,14 @@ function StatCard({
 
         </div>
 
-        <p className="text-sm text-gray-500 dark:text-zinc-500">
+        <p className="text-xs text-gray-500 dark:text-zinc-500 sm:text-sm">
           {title}
         </p>
 
       </div>
 
 
-      <p className="mt-5 text-3xl font-bold text-gray-900 dark:text-white">
+      <p className="mt-4 text-2xl font-bold text-gray-900 dark:text-white sm:mt-5 sm:text-3xl">
         {value}
       </p>
 
