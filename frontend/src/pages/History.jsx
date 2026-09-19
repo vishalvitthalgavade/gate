@@ -423,15 +423,15 @@ export default function History() {
 
   return (
     <>
-      <div className="min-h-full overflow-x-hidden bg-gray-50 px-3 py-4 text-gray-900 transition-colors duration-300 dark:bg-[#0b1120] dark:text-white sm:px-5 sm:py-6 lg:px-8 lg:py-8">
+      <div className="min-h-full w-full overflow-x-hidden bg-gray-50 px-3 py-4 text-gray-900 transition-colors duration-300 dark:bg-[#0b1120] dark:text-white sm:px-5 sm:py-6 lg:px-8 lg:py-8">
         <div className="mx-auto w-full max-w-[1420px] min-w-0 space-y-4 sm:space-y-5 lg:space-y-6">
 
           {/* =================================================
               HEADER
           ================================================= */}
           <header className="rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 sm:px-5 sm:py-5 lg:px-7 lg:py-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 items-center gap-2 sm:flex-1 sm:gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 sm:h-12 sm:w-12">
                   <HistoryIcon
                     size={23}
@@ -440,17 +440,17 @@ export default function History() {
                 </div>
 
                 <div className="min-w-0">
-                  <h1 className="text-lg font-bold leading-tight tracking-tight text-gray-900 dark:text-white sm:text-2xl lg:text-3xl">
+                  <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white sm:text-2xl lg:text-3xl">
                     Study History
                   </h1>
-                  <p className="mt-0.5 line-clamp-1 text-[10px] text-gray-500 dark:text-zinc-500 sm:text-sm">
+                  <p className="mt-1 line-clamp-1 text-[10px] leading-4 text-gray-500 dark:text-zinc-500 sm:text-sm">
                     Your completed study sessions from the last 7 days
                   </p>
                 </div>
               </div>
 
               <div
-                className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-2 py-1.5 text-[10px] font-medium sm:gap-2 sm:px-3 sm:py-2 sm:text-xs ${
+                className={`self-start flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[10px] font-medium sm:self-auto sm:gap-2 sm:px-3 sm:py-2 sm:text-xs ${
                   isOnline
                     ? "border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400"
                     : "border-yellow-500/20 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
@@ -477,15 +477,15 @@ export default function History() {
               Mobile: 3 compact columns
               Laptop: 3 roomy columns
           ================================================= */}
-          <section className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:gap-6">
+          <section className="grid min-w-0 grid-cols-3 gap-2 sm:gap-4 lg:gap-6">
             {/* WEEKLY */}
-            <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="line-clamp-2 min-h-[24px] text-[9px] leading-3 font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
+                  <p className="line-clamp-2 min-h-[22px] break-words text-[8px] leading-[10px] font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
                     Weekly Average
                   </p>
-                  <p className="mt-1 text-sm font-bold leading-tight text-gray-900 dark:text-white sm:mt-2 sm:text-2xl">
+                  <p className="mt-1 text-[15px] font-bold leading-tight text-gray-900 dark:text-white sm:mt-2 sm:text-2xl">
                     {formatDuration(Math.round(weeklyStats.averageSeconds))}
                   </p>
                 </div>
@@ -520,20 +520,20 @@ export default function History() {
                   />
                 </div>
 
-                <p className="mt-1.5 line-clamp-2 text-[8px] leading-3 text-gray-400 dark:text-zinc-600 sm:mt-2 sm:text-xs">
+                <p className="mt-1.5 line-clamp-2 break-words text-[7px] leading-[9px] text-gray-400 dark:text-zinc-600 sm:mt-2 sm:text-xs">
                   {weeklyStats.studyDays} of 7 days studied
                 </p>
               </div>
             </div>
 
             {/* MONTHLY */}
-            <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="line-clamp-2 min-h-[24px] text-[9px] leading-3 font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
+                  <p className="line-clamp-2 min-h-[22px] break-words text-[8px] leading-[10px] font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
                     Monthly Total
                   </p>
-                  <p className="mt-1 text-sm font-bold leading-tight text-gray-900 dark:text-white sm:mt-2 sm:text-2xl">
+                  <p className="mt-1 text-[15px] font-bold leading-tight text-gray-900 dark:text-white sm:mt-2 sm:text-2xl">
                     {formatDuration(monthlyTotal)}
                   </p>
                 </div>
@@ -546,7 +546,7 @@ export default function History() {
                 </div>
               </div>
 
-              <p className="mt-3 line-clamp-2 text-[8px] leading-3 text-gray-400 dark:text-zinc-600 sm:mt-6 sm:text-xs">
+              <p className="mt-3 line-clamp-2 break-words text-[7px] leading-[9px] text-gray-400 dark:text-zinc-600 sm:mt-6 sm:text-xs">
                 {new Date().toLocaleDateString("en-IN", {
                   month: "long",
                   year: "numeric",
@@ -555,13 +555,13 @@ export default function History() {
             </div>
 
             {/* ALL TIME */}
-            <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="line-clamp-2 min-h-[24px] text-[9px] leading-3 font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
+                  <p className="line-clamp-2 min-h-[22px] break-words text-[8px] leading-[10px] font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
                     Total Time Studied
                   </p>
-                  <p className="mt-1 text-sm font-bold leading-tight text-gray-900 dark:text-white sm:mt-2 sm:text-2xl">
+                  <p className="mt-1 text-[15px] font-bold leading-tight text-gray-900 dark:text-white sm:mt-2 sm:text-2xl">
                     {formatDuration(totalTimeStudied)}
                   </p>
                 </div>
@@ -574,7 +574,7 @@ export default function History() {
                 </div>
               </div>
 
-              <p className="mt-3 line-clamp-2 text-[8px] leading-3 text-gray-400 dark:text-zinc-600 sm:mt-6 sm:text-xs">
+              <p className="mt-3 line-clamp-2 break-words text-[7px] leading-[9px] text-gray-400 dark:text-zinc-600 sm:mt-6 sm:text-xs">
                 All saved study sessions
               </p>
             </div>
@@ -583,11 +583,11 @@ export default function History() {
           {/* =================================================
               SUMMARY — 3 CARDS
           ================================================= */}
-          <section className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:gap-6">
+          <section className="grid min-w-0 grid-cols-3 gap-2 sm:gap-4 lg:gap-6">
             {/* SESSIONS */}
-            <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
               <div className="mb-2 flex items-center justify-between gap-2 sm:mb-4">
-                <p className="line-clamp-2 min-h-[24px] text-[9px] leading-3 font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
+                <p className="line-clamp-2 min-h-[22px] break-words text-[8px] leading-[10px] font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
                   Last 7 Days · Sessions
                 </p>
                 <div className="hidden shrink-0 rounded-xl bg-purple-500/10 p-2 sm:block">
@@ -598,19 +598,19 @@ export default function History() {
                 </div>
               </div>
 
-              <p className="text-base font-bold leading-tight text-gray-900 dark:text-white sm:text-2xl">
+              <p className="text-[15px] font-bold leading-tight text-gray-900 dark:text-white sm:text-2xl">
                 {filteredSessions.length}
               </p>
 
-              <p className="mt-1 line-clamp-2 text-[8px] leading-3 text-gray-400 dark:text-zinc-600 sm:text-xs">
+              <p className="mt-1 line-clamp-2 break-words text-[7px] leading-[9px] text-gray-400 dark:text-zinc-600 sm:text-xs">
                 Matching your filters
               </p>
             </div>
 
             {/* STUDY */}
-            <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
               <div className="mb-2 flex items-center justify-between gap-2 sm:mb-4">
-                <p className="line-clamp-2 min-h-[24px] text-[9px] leading-3 font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
+                <p className="line-clamp-2 min-h-[22px] break-words text-[8px] leading-[10px] font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
                   Last 7 Days · Study
                 </p>
                 <div className="hidden shrink-0 rounded-xl bg-blue-500/10 p-2 sm:block">
@@ -621,19 +621,19 @@ export default function History() {
                 </div>
               </div>
 
-              <p className="text-base font-bold leading-tight text-gray-900 dark:text-white sm:text-2xl">
+              <p className="text-[15px] font-bold leading-tight text-gray-900 dark:text-white sm:text-2xl">
                 {studySessionCount}
               </p>
 
-              <p className="mt-1 line-clamp-2 text-[8px] leading-3 text-gray-400 dark:text-zinc-600 sm:text-xs">
+              <p className="mt-1 line-clamp-2 break-words text-[7px] leading-[9px] text-gray-400 dark:text-zinc-600 sm:text-xs">
                 Pomodoro + regular study
               </p>
             </div>
 
             {/* FILTERED TIME */}
-            <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
               <div className="mb-2 flex items-center justify-between gap-2 sm:mb-4">
-                <p className="line-clamp-2 min-h-[24px] text-[9px] leading-3 font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
+                <p className="line-clamp-2 min-h-[22px] break-words text-[8px] leading-[10px] font-medium text-gray-500 dark:text-zinc-500 sm:min-h-0 sm:text-sm sm:leading-normal">
                   Last 7 Days · Study Time
                 </p>
                 <div className="hidden shrink-0 rounded-xl bg-green-500/10 p-2 sm:block">
@@ -644,11 +644,11 @@ export default function History() {
                 </div>
               </div>
 
-              <p className="text-base font-bold leading-tight text-gray-900 dark:text-white sm:text-2xl">
+              <p className="text-[15px] font-bold leading-tight text-gray-900 dark:text-white sm:text-2xl">
                 {formatDuration(filteredTotalDuration)}
               </p>
 
-              <p className="mt-1 line-clamp-2 text-[8px] leading-3 text-gray-400 dark:text-zinc-600 sm:text-xs">
+              <p className="mt-1 line-clamp-2 break-words text-[7px] leading-[9px] text-gray-400 dark:text-zinc-600 sm:text-xs">
                 Time represented by filters
               </p>
             </div>

@@ -1,0 +1,12 @@
+{
+  "name": "GATE CSE Study Tracker",
+  "short_name": "GATE CSE",
+  "description": "GATE CSE Study Tracker",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "icons": []
+}
