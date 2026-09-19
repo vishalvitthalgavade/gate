@@ -16,6 +16,7 @@ import Syllabus from "./pages/Syllabus";
 import History from "./pages/History";
 import Statistics from "./pages/Statistics";
 import Settings from "./pages/Settings";
+import Leaderboard from "./pages/Leaderboard";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -138,6 +139,12 @@ function App() {
                             <Route
                               path="/statistics"
                               element={<Statistics />}
+                            />
+
+                            {/* Leaderboard */}
+                            <Route
+                              path="/leaderboard"
+                              element={<Leaderboard />}
                             />
 
                             {/* Settings */}

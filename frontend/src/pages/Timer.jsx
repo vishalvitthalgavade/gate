@@ -23,6 +23,7 @@ import {
 import { GATE_SYLLABUS } from "../data/syllabus";
 import { useStudy } from "../context/useStudy";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 /* -------------------------
    TIME FORMATTERS
@@ -62,6 +63,7 @@ function formatShortTime(totalSeconds) {
 
 function Timer() {
   const { theme, toggleTheme } = useTheme();
+  const { authFetch } = useAuth();
 
   const isDark = theme === "dark";
 
@@ -74,6 +76,173 @@ function Timer() {
     pomodoroSettings,
     updatePomodoroSettings,
   } = useStudy();
+
+  /* -------------------------
+     LIVE LEADERBOARD SYNC
+  ------------------------- */
+
+  const simpleSecondsRef = useRef(0);
+  const pomodoroSecondsRef = useRef(
+    pomodoroSettings.study * 60
+  );
+  const pomodoroModeRef = useRef("study");
+  const simpleRunningRef = useRef(false);
+  const pomodoroRunningRef = useRef(false);
+
+  async function activeStudyRequest(
+    endpoint,
+    body = {}
+  ) {
+    try {
+      const response = await authFetch(endpoint, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        console.warn(
+          `Active study request failed: ${endpoint}`
+        );
+      }
+
+      return response;
+    } catch (error) {
+      console.warn(
+        `Active study request error: ${endpoint}`,
+        error
+      );
+
+      return null;
+    }
+  }
+
+  function getSimpleElapsedSeconds() {
+    if (!simpleRunningRef.current) {
+      return simpleSecondsRef.current;
+    }
+
+    const elapsed = Math.floor(
+      (Date.now() -
+        simpleStartTime.current) /
+        1000
+    );
+
+    return (
+      simpleElapsedBeforeStart.current +
+      Math.max(0, elapsed)
+    );
+  }
+
+  function getPomodoroElapsedSeconds() {
+    if (pomodoroModeRef.current !== "study") {
+      return 0;
+    }
+
+    const totalStudySeconds =
+      pomodoroSettings.study * 60;
+
+    const remaining =
+      pomodoroRunningRef.current &&
+      pomodoroEndTime.current
+        ? Math.max(
+            0,
+            Math.ceil(
+              (pomodoroEndTime.current -
+                Date.now()) /
+                1000
+            )
+          )
+        : pomodoroSecondsRef.current;
+
+    return Math.max(
+      0,
+      totalStudySeconds - remaining
+    );
+  }
+
+  async function startActiveSimpleStudy() {
+    await activeStudyRequest(
+      "/sessions/active/start",
+      {
+        subject:
+          selectedSubject || "No subject",
+        topic:
+          selectedTopic || "No topic",
+        type: "Regular Timer",
+        accumulatedSeconds:
+          simpleSecondsRef.current,
+      }
+    );
+  }
+
+  async function startActivePomodoroStudy() {
+    await activeStudyRequest(
+      "/sessions/active/start",
+      {
+        subject:
+          selectedSubject || "No subject",
+        topic:
+          selectedTopic || "No topic",
+        type: "Pomodoro",
+        accumulatedSeconds:
+          getPomodoroElapsedSeconds(),
+      }
+    );
+  }
+
+  async function heartbeatActiveStudy() {
+    if (
+      simpleRunningRef.current
+    ) {
+      await activeStudyRequest(
+        "/sessions/active/heartbeat",
+        {
+          subject:
+            selectedSubject || "No subject",
+          topic:
+            selectedTopic || "No topic",
+          type: "Regular Timer",
+          accumulatedSeconds:
+            getSimpleElapsedSeconds(),
+        }
+      );
+
+      return;
+    }
+
+    if (
+      pomodoroRunningRef.current &&
+      pomodoroModeRef.current === "study"
+    ) {
+      await activeStudyRequest(
+        "/sessions/active/heartbeat",
+        {
+          subject:
+            selectedSubject || "No subject",
+          topic:
+            selectedTopic || "No topic",
+          type: "Pomodoro",
+          accumulatedSeconds:
+            getPomodoroElapsedSeconds(),
+        }
+      );
+    }
+  }
+
+  async function pauseActiveStudy(seconds) {
+    await activeStudyRequest(
+      "/sessions/active/pause",
+      {
+        accumulatedSeconds: seconds,
+      }
+    );
+  }
+
+  async function stopActiveStudy() {
+    await activeStudyRequest(
+      "/sessions/active/stop"
+    );
+  }
 
   /* -------------------------
      TIMER MODE
@@ -115,6 +284,12 @@ function Timer() {
   const simpleElapsedBeforeStart =
     useRef(0);
 
+  simpleSecondsRef.current =
+    simpleSeconds;
+
+  simpleRunningRef.current =
+    simpleRunning;
+
   useEffect(() => {
     if (!simpleRunning) return;
 
@@ -138,6 +313,8 @@ function Timer() {
 
   function startSimpleTimer() {
     setSimpleRunning(true);
+
+    startActiveSimpleStudy();
   }
 
   function pauseSimpleTimer() {
@@ -157,6 +334,10 @@ function Timer() {
     );
 
     setSimpleRunning(false);
+
+    pauseActiveStudy(
+      simpleElapsedBeforeStart.current
+    );
   }
 
   function stopSimpleTimer() {
@@ -176,6 +357,8 @@ function Timer() {
 
     setSimpleRunning(false);
 
+    stopActiveStudy();
+
     if (finalSeconds <= 0) return;
 
     saveSession(
@@ -189,6 +372,9 @@ function Timer() {
 
   function resetSimpleTimer() {
     setSimpleRunning(false);
+
+    stopActiveStudy();
+
     setSimpleSeconds(0);
 
     simpleElapsedBeforeStart.current = 0;
@@ -222,6 +408,15 @@ function Timer() {
 
   const pomodoroEndTime =
     useRef(null);
+
+  pomodoroSecondsRef.current =
+    pomodoroSeconds;
+
+  pomodoroModeRef.current =
+    pomodoroMode;
+
+  pomodoroRunningRef.current =
+    pomodoroRunning;
 
   /* -------------------------
      POMODORO TIMER
@@ -258,6 +453,10 @@ function Timer() {
 
   function startPomodoro() {
     setPomodoroRunning(true);
+
+    if (pomodoroMode === "study") {
+      startActivePomodoroStudy();
+    }
   }
 
   function pausePomodoro() {
@@ -274,10 +473,23 @@ function Timer() {
 
     setPomodoroSeconds(remaining);
     setPomodoroRunning(false);
+
+    if (pomodoroMode === "study") {
+      pauseActiveStudy(
+        Math.max(
+          0,
+          pomodoroSettings.study * 60 -
+            remaining
+        )
+      );
+    }
   }
 
   function resetPomodoro() {
     setPomodoroRunning(false);
+
+    stopActiveStudy();
+
     setPomodoroMode("study");
 
     setPomodoroSeconds(
@@ -287,6 +499,8 @@ function Timer() {
 
   function completePomodoro() {
     setPomodoroRunning(false);
+
+    stopActiveStudy();
 
     playNotificationSound();
 
@@ -331,6 +545,7 @@ function Timer() {
     setPomodoroRunning(false);
 
     if (pomodoroMode === "study") {
+      stopActiveStudy();
       setPomodoroMode("shortBreak");
 
       setPomodoroSeconds(
@@ -344,6 +559,54 @@ function Timer() {
       );
     }
   }
+
+  /* -------------------------
+     LIVE LEADERBOARD HEARTBEAT
+  ------------------------- */
+
+  useEffect(() => {
+    if (
+      !simpleRunning &&
+      !pomodoroRunning
+    ) {
+      return;
+    }
+
+    const heartbeatInterval =
+      setInterval(() => {
+        heartbeatActiveStudy();
+      }, 10000);
+
+    return () =>
+      clearInterval(
+        heartbeatInterval
+      );
+  }, [
+    simpleRunning,
+    pomodoroRunning,
+    pomodoroMode,
+    selectedSubject,
+    selectedTopic,
+  ]);
+
+  /* -------------------------
+     CLEAN UP ACTIVE STUDY
+  ------------------------- */
+
+  useEffect(() => {
+    return () => {
+      if (
+        simpleRunningRef.current ||
+        (
+          pomodoroRunningRef.current &&
+          pomodoroModeRef.current ===
+            "study"
+        )
+      ) {
+        stopActiveStudy();
+      }
+    };
+  }, []);
 
   /* -------------------------
      SOUND

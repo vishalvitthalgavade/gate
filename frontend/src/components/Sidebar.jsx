@@ -5,6 +5,7 @@ import {
   BookOpen,
   History,
   BarChart3,
+  Trophy,
   X,
   LogOut,
   Sun,
@@ -53,6 +54,11 @@ function Sidebar({ isOpen, setIsOpen }) {
       name: "Statistics",
       path: "/statistics",
       icon: BarChart3,
+    },
+    {
+      name: "Leaderboard",
+      path: "/leaderboard",
+      icon: Trophy,
     },
   ];
 
@@ -302,7 +308,9 @@ function Sidebar({ isOpen, setIsOpen }) {
               )}
 
               <span>
-                {theme === "dark" ? "Dark Mode" : "Light Mode"}
+                {theme === "dark"
+                  ? "Dark Mode"
+                  : "Light Mode"}
               </span>
             </div>
 

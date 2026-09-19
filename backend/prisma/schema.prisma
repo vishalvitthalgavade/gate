@@ -23,6 +23,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   studySessions    StudySession[]
+  activeStudy      ActiveStudySession?
   completedTopics  CompletedTopic[]
   pomodoroSettings PomodoroSettings?
   authSessions     AuthSession[]
@@ -58,6 +59,55 @@ model StudySession {
   @@index([userId, createdAt])
 
   @@map("study_sessions")
+}
+
+
+/*
+====================================================
+ACTIVE STUDY SESSION
+====================================================
+
+Stores the timer that is currently running.
+
+This is separate from StudySession so an active
+timer does not appear in History/Statistics until
+the student actually saves/completes it.
+
+Only one active timer is allowed per user.
+====================================================
+*/
+
+model ActiveStudySession {
+  id String @id @default(cuid())
+
+  userId String @unique
+
+  subject String
+  topic   String
+  type    String
+
+  startedAt DateTime
+  pausedAt  DateTime?
+
+  accumulatedSeconds Int @default(0)
+
+  isRunning Boolean @default(true)
+
+  lastHeartbeatAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  @@index([isRunning])
+  @@index([lastHeartbeatAt])
+
+  @@map("active_study_sessions")
 }
 
 
