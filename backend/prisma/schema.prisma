@@ -98,11 +98,7 @@ model ActiveStudySession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([isRunning])
   @@index([lastHeartbeatAt])
@@ -126,7 +122,7 @@ model CompletedTopic {
   unit    String
   topic   String
 
-  completed   Boolean  @default(false)
+  completed   Boolean   @default(false)
   completedAt DateTime?
 
   createdAt DateTime @default(now())
