@@ -14,6 +14,7 @@ import {
   User,
 } from "lucide-react";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -23,6 +24,60 @@ function Sidebar({ isOpen, setIsOpen }) {
   const { theme, toggleTheme } = useTheme();
 
   const navigate = useNavigate();
+
+  /*
+  ----------------------------------------------------
+  GATE EXAM COUNTDOWN
+  ----------------------------------------------------
+
+  Change this date if the official GATE CSE exam date
+  changes.
+  ----------------------------------------------------
+  */
+  const GATE_EXAM_DATE = "2027-02-07T00:00:00+05:30";
+
+  const [daysLeft, setDaysLeft] = useState(() => {
+    const now = new Date();
+    const examDate = new Date(GATE_EXAM_DATE);
+
+    const difference =
+      examDate.getTime() - now.getTime();
+
+    return Math.max(
+      0,
+      Math.ceil(difference / (1000 * 60 * 60 * 24))
+    );
+  });
+
+  useEffect(() => {
+    function updateDaysLeft() {
+      const now = new Date();
+      const examDate = new Date(GATE_EXAM_DATE);
+
+      const difference =
+        examDate.getTime() - now.getTime();
+
+      setDaysLeft(
+        Math.max(
+          0,
+          Math.ceil(
+            difference /
+              (1000 * 60 * 60 * 24)
+          )
+        )
+      );
+    }
+
+    updateDaysLeft();
+
+    // Keep the counter automatically updated.
+    const interval = setInterval(
+      updateDaysLeft,
+      60 * 60 * 1000
+    );
+
+    return () => clearInterval(interval);
+  }, []);
 
   const menuItems = [
     {
@@ -102,10 +157,9 @@ function Sidebar({ isOpen, setIsOpen }) {
           md:translate-x-0
         `}
       >
-        {/* Logo */}
+        {/* Logo + GATE Countdown */}
         <div
           className={`
-            flex items-center justify-between
             border-b px-5 py-5
 
             ${
@@ -115,50 +169,123 @@ function Sidebar({ isOpen, setIsOpen }) {
             }
           `}
         >
-          <div>
-            <h1
-              className={`
-                text-xl font-bold
-                ${
-                  theme === "dark"
-                    ? "text-white"
-                    : "text-gray-900"
-                }
-              `}
-            >
-              GATE CSE
-            </h1>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1
+                className={`
+                  text-xl font-bold
+                  ${
+                    theme === "dark"
+                      ? "text-white"
+                      : "text-gray-900"
+                  }
+                `}
+              >
+                GATE CSE
+              </h1>
 
-            <p
+              <p
+                className={`
+                  mt-1 text-sm
+                  ${
+                    theme === "dark"
+                      ? "text-zinc-500"
+                      : "text-gray-500"
+                  }
+                `}
+              >
+                Study Tracker
+              </p>
+            </div>
+
+            {/* Mobile Close */}
+            <button
+              onClick={() => setIsOpen(false)}
               className={`
-                mt-1 text-sm
+                rounded-lg p-2 transition
+                md:hidden
+
                 ${
                   theme === "dark"
-                    ? "text-zinc-500"
-                    : "text-gray-500"
+                    ? "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 }
               `}
             >
-              Study Tracker
-            </p>
+              <X size={22} />
+            </button>
           </div>
 
-          {/* Mobile Close */}
-          <button
-            onClick={() => setIsOpen(false)}
+          {/* GATE Days Counter */}
+          <div
             className={`
-              rounded-lg p-2 transition
-              md:hidden
+              mt-4 rounded-xl border px-4 py-3
 
               ${
                 theme === "dark"
-                  ? "text-zinc-400 hover:bg-zinc-900 hover:text-white"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                  ? "border-purple-500/20 bg-purple-500/10"
+                  : "border-purple-200 bg-purple-50"
               }
             `}
           >
-            <X size={22} />
-          </button>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p
+                  className={`
+                    text-[11px] font-semibold uppercase tracking-wider
+                    ${
+                      theme === "dark"
+                        ? "text-purple-300"
+                        : "text-purple-700"
+                    }
+                  `}
+                >
+                  GATE 2027
+                </p>
+
+                <p
+                  className={`
+                    mt-0.5 text-xs
+                    ${
+                      theme === "dark"
+                        ? "text-zinc-500"
+                        : "text-gray-500"
+                    }
+                  `}
+                >
+                  Days remaining
+                </p>
+              </div>
+
+              <div className="text-right">
+                <p
+                  className={`
+                    text-2xl font-extrabold leading-none
+                    ${
+                      theme === "dark"
+                        ? "text-white"
+                        : "text-gray-900"
+                    }
+                  `}
+                >
+                  {daysLeft}
+                </p>
+
+                <p
+                  className={`
+                    mt-1 text-[10px] font-medium
+                    ${
+                      theme === "dark"
+                        ? "text-purple-400"
+                        : "text-purple-600"
+                    }
+                  `}
+                >
+                  DAYS LEFT
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}
