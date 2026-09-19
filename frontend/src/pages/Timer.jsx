@@ -67,6 +67,31 @@ function Timer() {
 
   const isDark = theme === "dark";
 
+  /*
+  ----------------------------------------------------
+  ACTIVE TIMER LOCK
+  ----------------------------------------------------
+
+  The backend is the final authority. This state is
+  only used to prevent the local UI from starting when
+  another browser/device already owns the timer.
+  ----------------------------------------------------
+  */
+  const [activeTimerLock, setActiveTimerLock] =
+    useState(false);
+
+  const [activeTimerInfo, setActiveTimerInfo] =
+    useState(null);
+
+  const [activeTimerChecking, setActiveTimerChecking] =
+    useState(true);
+
+  const activeTimerLockRef =
+    useRef(false);
+
+  activeTimerLockRef.current =
+    activeTimerLock;
+
   /* -------------------------
      SHARED STUDY STATE
   ------------------------- */
@@ -99,21 +124,161 @@ function Timer() {
         body: JSON.stringify(body),
       });
 
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
       if (!response.ok) {
         console.warn(
-          `Active study request failed: ${endpoint}`
+          `Active study request failed: ${endpoint}`,
+          data
         );
       }
 
-      return response;
+      return {
+        ok: response.ok,
+        response,
+        data,
+      };
     } catch (error) {
       console.warn(
         `Active study request error: ${endpoint}`,
         error
       );
 
-      return null;
+      return {
+        ok: false,
+        response: null,
+        data: null,
+        error,
+      };
     }
+  }
+
+  /*
+  ----------------------------------------------------
+  CHECK ACTIVE TIMER
+  ----------------------------------------------------
+
+  This checks the backend before allowing a timer to
+  start. The backend remains the final authority.
+  ----------------------------------------------------
+  */
+  async function checkActiveTimer() {
+    setActiveTimerChecking(true);
+
+    try {
+      const response = await authFetch(
+        "/sessions/active"
+      );
+
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        console.warn(
+          "Failed to check active timer:",
+          data
+        );
+
+        /*
+         * Do not lock the timer just because the status
+         * request failed. The start endpoint will still
+         * perform the authoritative server-side check.
+         */
+        setActiveTimerLock(false);
+        setActiveTimerInfo(null);
+        return;
+      }
+
+      const activeStudy =
+        data?.activeStudy || null;
+
+      if (activeStudy?.isRunning) {
+        setActiveTimerLock(true);
+        setActiveTimerInfo(activeStudy);
+      } else {
+        setActiveTimerLock(false);
+        setActiveTimerInfo(
+          activeStudy || null
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "Active timer check error:",
+        error
+      );
+
+      setActiveTimerLock(false);
+      setActiveTimerInfo(null);
+    } finally {
+      setActiveTimerChecking(false);
+    }
+  }
+
+  /*
+  ----------------------------------------------------
+  START ACTIVE TIMER
+  ----------------------------------------------------
+
+  Returns true only when the backend successfully
+  creates the active timer.
+
+  A 409 means another browser/device already owns
+  the user's active timer.
+  ----------------------------------------------------
+  */
+  async function requestActiveTimerStart(
+    body
+  ) {
+    const result =
+      await activeStudyRequest(
+        "/sessions/active/start",
+        body
+      );
+
+    if (result.ok) {
+      setActiveTimerLock(false);
+      setActiveTimerInfo(
+        result.data?.activeStudy || null
+      );
+
+      return true;
+    }
+
+    if (
+      result.response?.status === 409
+    ) {
+      setActiveTimerLock(true);
+
+      setActiveTimerInfo(
+        result.data?.activeStudy || null
+      );
+
+      const message =
+        result.data?.message ||
+        "A timer is already running on another device or browser.";
+
+      window.alert(message);
+
+      return false;
+    }
+
+    window.alert(
+      result.data?.message ||
+        "Could not start the study timer. Please try again."
+    );
+
+    return false;
   }
 
   function getSimpleElapsedSeconds() {
@@ -161,33 +326,35 @@ function Timer() {
   }
 
   async function startActiveSimpleStudy() {
-    await activeStudyRequest(
-      "/sessions/active/start",
-      {
-        subject:
-          selectedSubject || "No subject",
-        topic:
-          selectedTopic || "No topic",
-        type: "Regular Timer",
-        accumulatedSeconds:
-          simpleSecondsRef.current,
-      }
-    );
+    return requestActiveTimerStart({
+      subject:
+        selectedSubject || "No subject",
+
+      topic:
+        selectedTopic || "No topic",
+
+      type:
+        "Regular Timer",
+
+      accumulatedSeconds:
+        simpleSecondsRef.current,
+    });
   }
 
   async function startActivePomodoroStudy() {
-    await activeStudyRequest(
-      "/sessions/active/start",
-      {
-        subject:
-          selectedSubject || "No subject",
-        topic:
-          selectedTopic || "No topic",
-        type: "Pomodoro",
-        accumulatedSeconds:
-          getPomodoroElapsedSeconds(),
-      }
-    );
+    return requestActiveTimerStart({
+      subject:
+        selectedSubject || "No subject",
+
+      topic:
+        selectedTopic || "No topic",
+
+      type:
+        "Pomodoro",
+
+      accumulatedSeconds:
+        getPomodoroElapsedSeconds(),
+    });
   }
 
   async function heartbeatActiveStudy() {
@@ -230,15 +397,47 @@ function Timer() {
   }
 
   async function pauseActiveStudy(seconds) {
-    await activeStudyRequest(
-      "/sessions/active/pause",
-      {
-        accumulatedSeconds: seconds,
-      }
-    );
+    const result =
+      await activeStudyRequest(
+        "/sessions/active/pause",
+        {
+          accumulatedSeconds:
+            seconds,
+        }
+      );
+
+    if (result.ok) {
+      setActiveTimerLock(false);
+      setActiveTimerInfo(
+        result.data?.activeStudy || null
+      );
+    }
+
+    return result;
   }
 
   async function stopActiveStudy() {
+    const result =
+      await activeStudyRequest(
+        "/sessions/active/stop"
+      );
+
+    if (result.ok) {
+      setActiveTimerLock(false);
+      setActiveTimerInfo(null);
+    }
+
+    return result;
+  }
+
+  /*
+  ----------------------------------------------------
+  CHECK SERVER TIMER WHEN TIMER PAGE OPENS
+  ----------------------------------------------------
+  */
+  useEffect(() => {
+    checkActiveTimer();
+  }, []);() {
     await activeStudyRequest(
       "/sessions/active/stop"
     );
@@ -311,10 +510,22 @@ function Timer() {
     return () => clearInterval(interval);
   }, [simpleRunning]);
 
-  function startSimpleTimer() {
-    setSimpleRunning(true);
+  async function startSimpleTimer() {
+    if (
+      activeTimerChecking ||
+      activeTimerLockRef.current
+    ) {
+      return;
+    }
 
-    startActiveSimpleStudy();
+    const started =
+      await startActiveSimpleStudy();
+
+    if (!started) {
+      return;
+    }
+
+    setSimpleRunning(true);
   }
 
   function pauseSimpleTimer() {
@@ -451,12 +662,24 @@ function Timer() {
       clearInterval(interval);
   }, [pomodoroRunning]);
 
-  function startPomodoro() {
-    setPomodoroRunning(true);
+  async function startPomodoro() {
+    if (
+      activeTimerChecking ||
+      activeTimerLockRef.current
+    ) {
+      return;
+    }
 
     if (pomodoroMode === "study") {
-      startActivePomodoroStudy();
+      const started =
+        await startActivePomodoroStudy();
+
+      if (!started) {
+        return;
+      }
     }
+
+    setPomodoroRunning(true);
   }
 
   function pausePomodoro() {
@@ -956,6 +1179,53 @@ function Timer() {
           )}
         </button>
 
+        {/* ACTIVE TIMER LOCK */}
+
+        {activeTimerLock && (
+          <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-left">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 text-lg">
+                ⚠️
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  Timer already running
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-amber-700/80 dark:text-amber-200/70">
+                  This account already has a running timer
+                  on another browser or device. Stop or
+                  pause that timer before starting a new one.
+                </p>
+
+                {activeTimerInfo && (
+                  <p className="mt-2 truncate text-xs font-medium text-slate-600 dark:text-zinc-300">
+                    {activeTimerInfo.subject || "No subject"}
+                    {activeTimerInfo.topic
+                      ? ` • ${activeTimerInfo.topic}`
+                      : ""}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={checkActiveTimer}
+                  className="mt-3 rounded-lg border border-amber-500/30 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/10 dark:text-amber-300"
+                >
+                  Check again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTimerChecking && (
+          <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs text-slate-500 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
+            Checking active timer...
+          </div>
+        )}
+
         {/* TIMER CONTENT */}
 
         <div className={isFullscreen ? "w-full max-w-5xl" : "w-full"}>
@@ -1004,7 +1274,11 @@ function Timer() {
                   onClick={
                     startSimpleTimer
                   }
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-purple-600/15 transition hover:bg-purple-500 active:scale-[0.98] dark:text-white sm:px-5"
+                  disabled={
+                    activeTimerChecking ||
+                    activeTimerLock
+                  }
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-purple-600/15 transition hover:bg-purple-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 dark:text-white sm:px-5"
                 >
                   <Play size={18} />
                   Start
@@ -1097,7 +1371,11 @@ function Timer() {
                   onClick={
                     startPomodoro
                   }
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-purple-600/15 transition hover:bg-purple-500 active:scale-[0.98] dark:text-white sm:px-5"
+                  disabled={
+                    activeTimerChecking ||
+                    activeTimerLock
+                  }
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-purple-600/15 transition hover:bg-purple-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 dark:text-white sm:px-5"
                 >
                   <Play size={18} />
                   Start
