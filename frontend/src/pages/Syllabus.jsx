@@ -8,19 +8,15 @@ import {
   Plus,
   Trash2,
   X,
-  Edit3,
 } from "lucide-react";
 
 import { GATE_SYLLABUS } from "../data/syllabus";
 import { useTheme } from "../context/ThemeContext";
-
+import { useStudy } from "../context/useStudy";
 
 /* =========================================================
    STORAGE KEYS
 ========================================================= */
-
-const COMPLETED_STORAGE_KEY =
-  "gate-completed-topics";
 
 const CUSTOM_SYLLABUS_STORAGE_KEY =
   "gate-custom-syllabus";
@@ -31,24 +27,20 @@ const DELETED_TOPICS_STORAGE_KEY =
 const DELETED_UNITS_STORAGE_KEY =
   "gate-deleted-syllabus-units";
 
+const COMPLETED_MIGRATION_KEY =
+  "gate-completed-topics-migrated";
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function topicKey(
-  subject,
-  unit,
-  topic
-) {
+function topicKey(subject, unit, topic) {
   return `${subject}|||${unit}|||${topic}`;
 }
 
-
 function loadJSON(key, fallback) {
   try {
-    const saved =
-      localStorage.getItem(key);
+    const saved = localStorage.getItem(key);
 
     return saved
       ? JSON.parse(saved)
@@ -58,7 +50,6 @@ function loadJSON(key, fallback) {
   }
 }
 
-
 /* =========================================================
    SYLLABUS
 ========================================================= */
@@ -66,32 +57,35 @@ function loadJSON(key, fallback) {
 function Syllabus() {
   const { theme } = useTheme();
 
-
-  /* =======================================================
-     COMPLETED TOPICS
-  ======================================================= */
-
-  const [
-    completedTopics,
-    setCompletedTopics,
-  ] = useState(() => {
-    return loadJSON(
-      COMPLETED_STORAGE_KEY,
-      {}
-    );
-  });
-
+  /*
+   * StudyContext is now the source of truth for
+   * completed topics.
+   *
+   * Data flow:
+   *
+   * Syllabus
+   *   ↓
+   * useStudy()
+   *   ↓
+   * IndexedDB
+   *   ↓
+   * API
+   *   ↓
+   * Prisma
+   *   ↓
+   * Neon PostgreSQL
+   */
+  const {
+    completedTopics: serverCompletedTopics,
+    toggleTopic: saveTopic,
+    markAllSubject: saveAllSubject,
+    clearSubject: clearAllSubject,
+    isSyncing,
+    isOnline,
+  } = useStudy();
 
   /* =======================================================
      CUSTOM SYLLABUS
-
-     Structure:
-
-     {
-       "Subject": {
-         "Unit": ["Topic 1", "Topic 2"]
-       }
-     }
   ======================================================= */
 
   const [
@@ -103,7 +97,6 @@ function Syllabus() {
       {}
     );
   });
-
 
   /* =======================================================
      DELETED ORIGINAL TOPICS
@@ -119,7 +112,6 @@ function Syllabus() {
     );
   });
 
-
   /* =======================================================
      DELETED ORIGINAL UNITS
   ======================================================= */
@@ -134,7 +126,6 @@ function Syllabus() {
     );
   });
 
-
   /* =======================================================
      EXPANDED SUBJECTS
   ======================================================= */
@@ -143,7 +134,6 @@ function Syllabus() {
     expandedSubjects,
     setExpandedSubjects,
   ] = useState({});
-
 
   /* =======================================================
      MODAL
@@ -160,20 +150,31 @@ function Syllabus() {
     topic: "",
   });
 
-
   /* =======================================================
-     SAVE COMPLETED
+     BUILD COMPLETED TOPIC MAP
   ======================================================= */
 
-  useEffect(() => {
-    localStorage.setItem(
-      COMPLETED_STORAGE_KEY,
-      JSON.stringify(
-        completedTopics
-      )
-    );
-  }, [completedTopics]);
+  const completedTopicMap = useMemo(() => {
+    const map = {};
 
+    if (!Array.isArray(serverCompletedTopics)) {
+      return map;
+    }
+
+    serverCompletedTopics.forEach((item) => {
+      if (!item) return;
+
+      const key = topicKey(
+        item.subject,
+        item.unit,
+        item.topic
+      );
+
+      map[key] = Boolean(item.completed);
+    });
+
+    return map;
+  }, [serverCompletedTopics]);
 
   /* =======================================================
      SAVE CUSTOM SYLLABUS
@@ -182,12 +183,9 @@ function Syllabus() {
   useEffect(() => {
     localStorage.setItem(
       CUSTOM_SYLLABUS_STORAGE_KEY,
-      JSON.stringify(
-        customSyllabus
-      )
+      JSON.stringify(customSyllabus)
     );
   }, [customSyllabus]);
-
 
   /* =======================================================
      SAVE DELETED TOPICS
@@ -196,12 +194,9 @@ function Syllabus() {
   useEffect(() => {
     localStorage.setItem(
       DELETED_TOPICS_STORAGE_KEY,
-      JSON.stringify(
-        deletedTopics
-      )
+      JSON.stringify(deletedTopics)
     );
   }, [deletedTopics]);
-
 
   /* =======================================================
      SAVE DELETED UNITS
@@ -210,17 +205,145 @@ function Syllabus() {
   useEffect(() => {
     localStorage.setItem(
       DELETED_UNITS_STORAGE_KEY,
-      JSON.stringify(
-        deletedUnits
-      )
+      JSON.stringify(deletedUnits)
     );
   }, [deletedUnits]);
 
+  /* =======================================================
+     MIGRATE OLD LOCAL COMPLETION DATA
+
+     Old version stored:
+
+     gate-completed-topics
+
+     as:
+
+     {
+       "Subject|||Unit|||Topic": true
+     }
+
+     This migrates old completed topics into the
+     new StudyContext / Neon system.
+  ======================================================= */
+
+  useEffect(() => {
+    if (!Array.isArray(serverCompletedTopics)) {
+      return;
+    }
+
+    const alreadyMigrated =
+      localStorage.getItem(
+        COMPLETED_MIGRATION_KEY
+      );
+
+    if (alreadyMigrated === "true") {
+      return;
+    }
+
+    let oldData = {};
+
+    try {
+      const saved =
+        localStorage.getItem(
+          "gate-completed-topics"
+        );
+
+      if (saved) {
+        oldData = JSON.parse(saved);
+      }
+    } catch {
+      oldData = {};
+    }
+
+    if (
+      !oldData ||
+      typeof oldData !== "object"
+    ) {
+      localStorage.setItem(
+        COMPLETED_MIGRATION_KEY,
+        "true"
+      );
+
+      return;
+    }
+
+    const existing = new Set(
+      serverCompletedTopics
+        .filter(
+          (item) =>
+            item &&
+            item.completed
+        )
+        .map((item) =>
+          topicKey(
+            item.subject,
+            item.unit,
+            item.topic
+          )
+        )
+    );
+
+    const migrationTasks = [];
+
+    Object.entries(oldData).forEach(
+      ([key, completed]) => {
+        if (!completed) return;
+
+        const parts =
+          key.split("|||");
+
+        if (parts.length !== 3) {
+          return;
+        }
+
+        const [
+          subject,
+          unit,
+          topic,
+        ] = parts;
+
+        if (existing.has(key)) {
+          return;
+        }
+
+        migrationTasks.push(
+          saveTopic(
+            subject,
+            unit,
+            topic,
+            true
+          )
+        );
+      }
+    );
+
+    if (migrationTasks.length === 0) {
+      localStorage.setItem(
+        COMPLETED_MIGRATION_KEY,
+        "true"
+      );
+
+      return;
+    }
+
+    Promise.allSettled(
+      migrationTasks
+    ).finally(() => {
+      localStorage.setItem(
+        COMPLETED_MIGRATION_KEY,
+        "true"
+      );
+    });
+  }, [
+    serverCompletedTopics,
+    saveTopic,
+  ]);
 
   /* =======================================================
      BUILD FINAL SYLLABUS
 
      Combines:
+
      - Original GATE syllabus
      - Custom units
      - Custom topics
@@ -244,7 +367,6 @@ function Syllabus() {
           units
         ).forEach(
           ([unit, topics]) => {
-
             const unitDeleteKey =
               `${subject}|||${unit}`;
 
@@ -279,7 +401,6 @@ function Syllabus() {
       }
     );
 
-
     /* -----------------------------------------------
        CUSTOM SYLLABUS
     ----------------------------------------------- */
@@ -288,7 +409,6 @@ function Syllabus() {
       customSyllabus
     ).forEach(
       ([subject, units]) => {
-
         if (!result[subject]) {
           result[subject] = {};
         }
@@ -297,7 +417,6 @@ function Syllabus() {
           units
         ).forEach(
           ([unit, topics]) => {
-
             if (
               !result[subject][unit]
             ) {
@@ -325,14 +444,12 @@ function Syllabus() {
       }
     );
 
-
     /* -----------------------------------------------
        REMOVE EMPTY SUBJECTS
     ----------------------------------------------- */
 
     Object.keys(result).forEach(
       (subject) => {
-
         if (
           Object.keys(
             result[subject]
@@ -343,7 +460,6 @@ function Syllabus() {
       }
     );
 
-
     return result;
   }, [
     customSyllabus,
@@ -351,12 +467,11 @@ function Syllabus() {
     deletedUnits,
   ]);
 
-
   /* =======================================================
      TOGGLE TOPIC
   ======================================================= */
 
-  function toggleTopic(
+  async function toggleTopic(
     subject,
     unit,
     topic
@@ -367,22 +482,24 @@ function Syllabus() {
       topic
     );
 
-    setCompletedTopics(
-      (previous) => ({
-        ...previous,
-        [key]: !previous[key],
-      })
+    const current =
+      Boolean(
+        completedTopicMap[key]
+      );
+
+    await saveTopic(
+      subject,
+      unit,
+      topic,
+      !current
     );
   }
-
 
   /* =======================================================
      TOGGLE SUBJECT
   ======================================================= */
 
-  function toggleSubject(
-    subject
-  ) {
+  function toggleSubject(subject) {
     setExpandedSubjects(
       (previous) => ({
         ...previous,
@@ -391,7 +508,6 @@ function Syllabus() {
       })
     );
   }
-
 
   /* =======================================================
      STATS
@@ -407,7 +523,6 @@ function Syllabus() {
       syllabus
     ).forEach(
       ([subject, units]) => {
-
         let subjectTotal = 0;
         let subjectCompleted = 0;
 
@@ -415,7 +530,6 @@ function Syllabus() {
           units
         ).forEach(
           ([unit, topics]) => {
-
             subjectTotal +=
               topics.length;
 
@@ -424,7 +538,6 @@ function Syllabus() {
 
             topics.forEach(
               (topic) => {
-
                 const key =
                   topicKey(
                     subject,
@@ -433,7 +546,7 @@ function Syllabus() {
                   );
 
                 if (
-                  completedTopics[
+                  completedTopicMap[
                     key
                   ]
                 ) {
@@ -444,7 +557,6 @@ function Syllabus() {
             );
           }
         );
-
 
         subjects[subject] = {
           total:
@@ -465,7 +577,6 @@ function Syllabus() {
       }
     );
 
-
     return {
       total,
 
@@ -485,98 +596,70 @@ function Syllabus() {
       subjects,
     };
   }, [
-    completedTopics,
+    completedTopicMap,
     syllabus,
   ]);
-
 
   /* =======================================================
      MARK SUBJECT COMPLETE
   ======================================================= */
 
-  function markAllSubject(
+  async function markAllSubject(
     subject
   ) {
-    const updates = {};
-
-    Object.entries(
-      syllabus[subject] || {}
-    ).forEach(
-      ([unit, topics]) => {
-
-        topics.forEach(
-          (topic) => {
-
-            updates[
-              topicKey(
-                subject,
-                unit,
-                topic
-              )
-            ] = true;
-
-          }
-        );
-      }
-    );
-
-
-    setCompletedTopics(
-      (previous) => ({
-        ...previous,
-        ...updates,
-      })
+    /*
+     * Use StudyContext so every topic is
+     * saved to IndexedDB and queued for
+     * Neon synchronization.
+     */
+    await saveAllSubject(
+      subject,
+      Object.entries(
+        syllabus[subject] || {}
+      ).flatMap(
+        ([unit, topics]) =>
+          topics.map(
+            (topic) => ({
+              subject,
+              unit,
+              topic,
+              completed: true,
+            })
+          )
+      )
     );
   }
-
 
   /* =======================================================
      CLEAR SUBJECT
   ======================================================= */
 
-  function clearSubject(
+  async function clearSubject(
     subject
   ) {
-    const updates = {};
-
-    Object.entries(
-      syllabus[subject] || {}
-    ).forEach(
-      ([unit, topics]) => {
-
-        topics.forEach(
-          (topic) => {
-
-            updates[
-              topicKey(
-                subject,
-                unit,
-                topic
-              )
-            ] = false;
-
-          }
-        );
-      }
-    );
-
-
-    setCompletedTopics(
-      (previous) => ({
-        ...previous,
-        ...updates,
-      })
+    await clearAllSubject(
+      subject,
+      Object.entries(
+        syllabus[subject] || {}
+      ).flatMap(
+        ([unit, topics]) =>
+          topics.map(
+            (topic) => ({
+              subject,
+              unit,
+              topic,
+              completed: false,
+            })
+          )
+      )
     );
   }
-
 
   /* =======================================================
      OPEN ADD UNIT
   ======================================================= */
 
-  function openAddUnit(
-    subject
-  ) {
+  function openAddUnit(subject) {
     setModal({
       open: true,
       type: "add-unit",
@@ -585,7 +668,6 @@ function Syllabus() {
       topic: "",
     });
   }
-
 
   /* =======================================================
      OPEN ADD TOPIC
@@ -604,7 +686,6 @@ function Syllabus() {
     });
   }
 
-
   /* =======================================================
      OPEN DELETE UNIT
   ======================================================= */
@@ -621,7 +702,6 @@ function Syllabus() {
       topic: "",
     });
   }
-
 
   /* =======================================================
      OPEN DELETE TOPIC
@@ -641,7 +721,6 @@ function Syllabus() {
     });
   }
 
-
   /* =======================================================
      CLOSE MODAL
   ======================================================= */
@@ -655,7 +734,6 @@ function Syllabus() {
       topic: "",
     });
   }
-
 
   /* =======================================================
      ADD UNIT
@@ -674,7 +752,6 @@ function Syllabus() {
 
     setCustomSyllabus(
       (previous) => {
-
         const subjectData =
           previous[subject] || {};
 
@@ -686,16 +763,20 @@ function Syllabus() {
 
         return {
           ...previous,
+
           [subject]: {
             ...subjectData,
+
             [unit]: [],
           },
         };
       }
     );
 
-    /* If a previously deleted original
-       unit has same name, restore it. */
+    /*
+     * If a previously deleted original
+     * unit has same name, restore it.
+     */
 
     const deleteKey =
       `${subject}|||${unit}`;
@@ -717,7 +798,6 @@ function Syllabus() {
       })
     );
   }
-
 
   /* =======================================================
      ADD TOPIC
@@ -750,10 +830,8 @@ function Syllabus() {
       return;
     }
 
-
     setCustomSyllabus(
       (previous) => {
-
         const subjectData =
           previous[subject] || {};
 
@@ -775,7 +853,6 @@ function Syllabus() {
       }
     );
 
-
     closeModal();
 
     setExpandedSubjects(
@@ -786,12 +863,11 @@ function Syllabus() {
     );
   }
 
-
   /* =======================================================
      DELETE UNIT
   ======================================================= */
 
-  function deleteUnit() {
+  async function deleteUnit() {
     const subject =
       modal.subject;
 
@@ -801,12 +877,12 @@ function Syllabus() {
     const unitDeleteKey =
       `${subject}|||${unit}`;
 
-
-    /* Remove custom unit */
+    /*
+     * Remove custom unit.
+     */
 
     setCustomSyllabus(
       (previous) => {
-
         if (
           !previous[
             subject
@@ -839,8 +915,9 @@ function Syllabus() {
       }
     );
 
-
-    /* Hide original unit */
+    /*
+     * Hide original unit.
+     */
 
     if (
       GATE_SYLLABUS[
@@ -860,47 +937,36 @@ function Syllabus() {
       );
     }
 
+    /*
+     * Save all topics in this unit
+     * as incomplete in Neon.
+     */
 
-    /* Remove completion data
-       belonging to this unit */
+    const topics =
+      syllabus[
+        subject
+      ]?.[unit] || [];
 
-    setCompletedTopics(
-      (previous) => {
-
-        const next = {
-          ...previous,
-        };
-
-        Object.keys(
-          next
-        ).forEach(
-          (key) => {
-
-            if (
-              key.startsWith(
-                `${subject}|||${unit}|||`
-              )
-            ) {
-              delete next[key];
-            }
-
-          }
-        );
-
-        return next;
-      }
+    await Promise.all(
+      topics.map(
+        (topic) =>
+          saveTopic(
+            subject,
+            unit,
+            topic,
+            false
+          )
+      )
     );
-
 
     closeModal();
   }
-
 
   /* =======================================================
      DELETE TOPIC
   ======================================================= */
 
-  function deleteTopic() {
+  async function deleteTopic() {
     const subject =
       modal.subject;
 
@@ -910,19 +976,20 @@ function Syllabus() {
     const topic =
       modal.topic;
 
-    const key = topicKey(
-      subject,
-      unit,
-      topic
-    );
+    const key =
+      topicKey(
+        subject,
+        unit,
+        topic
+      );
 
-
-    /* If custom topic,
-       remove it from custom data */
+    /*
+     * If custom topic,
+     * remove it from custom data.
+     */
 
     setCustomSyllabus(
       (previous) => {
-
         if (
           !previous[
             subject
@@ -977,9 +1044,10 @@ function Syllabus() {
       }
     );
 
-
-    /* If original topic,
-       hide it */
+    /*
+     * If original topic,
+     * hide it.
+     */
 
     if (
       GATE_SYLLABUS[
@@ -997,26 +1065,20 @@ function Syllabus() {
       );
     }
 
+    /*
+     * Mark deleted topic incomplete
+     * in Neon.
+     */
 
-    /* Remove completion */
-
-    setCompletedTopics(
-      (previous) => {
-
-        const next = {
-          ...previous,
-        };
-
-        delete next[key];
-
-        return next;
-      }
+    await saveTopic(
+      subject,
+      unit,
+      topic,
+      false
     );
-
 
     closeModal();
   }
-
 
   /* =======================================================
      MODAL SUBMIT
@@ -1059,7 +1121,6 @@ function Syllabus() {
     }
   }
 
-
   /* =======================================================
      MODAL TITLE
   ======================================================= */
@@ -1083,7 +1144,6 @@ function Syllabus() {
     }
   }
 
-
   /* =======================================================
      PAGE
   ======================================================= */
@@ -1091,7 +1151,6 @@ function Syllabus() {
   return (
     <>
       <div className="min-h-full w-full bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-[#0b1120] dark:text-white">
-
 
         {/* =================================================
             HEADER
@@ -1110,7 +1169,6 @@ function Syllabus() {
 
             </div>
 
-
             <div>
 
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
@@ -1127,6 +1185,23 @@ function Syllabus() {
 
         </div>
 
+        {/* =================================================
+            SYNC STATUS
+        ================================================= */}
+
+        <div className="mb-4 flex items-center justify-between">
+
+          <p className="text-xs text-gray-400 dark:text-zinc-600">
+
+            {!isOnline
+              ? "Offline — changes will sync when you reconnect."
+              : isSyncing
+              ? "Syncing your progress..."
+              : "Progress synced"}
+
+          </p>
+
+        </div>
 
         {/* =================================================
             OVERALL PROGRESS
@@ -1147,7 +1222,6 @@ function Syllabus() {
               </p>
 
             </div>
-
 
             <div className="grid grid-cols-2 gap-3 sm:flex">
 
@@ -1174,7 +1248,6 @@ function Syllabus() {
 
           </div>
 
-
           <div className="mt-6 h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-800">
 
             <div
@@ -1187,7 +1260,6 @@ function Syllabus() {
           </div>
 
         </div>
-
 
         {/* =================================================
             SUBJECTS
@@ -1214,17 +1286,13 @@ function Syllabus() {
                   subject
                 ];
 
-
               return (
                 <div
                   key={subject}
                   className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/30"
                 >
 
-
-                  {/* =========================================
-                      SUBJECT HEADER
-                  ========================================= */}
+                  {/* SUBJECT HEADER */}
 
                   <div className="flex items-center">
 
@@ -1251,7 +1319,6 @@ function Syllabus() {
 
                       </div>
 
-
                       <div className="min-w-0 flex-1">
 
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -1272,7 +1339,6 @@ function Syllabus() {
 
                         </div>
 
-
                         <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-800">
 
                           <div
@@ -1286,7 +1352,6 @@ function Syllabus() {
 
                       </div>
 
-
                       <span className="hidden w-12 text-right text-sm font-semibold text-purple-600 dark:text-purple-400 sm:block">
                         {
                           subjectStats.percentage
@@ -1297,19 +1362,13 @@ function Syllabus() {
 
                   </div>
 
-
-                  {/* =========================================
-                      EXPANDED SUBJECT
-                  ========================================= */}
+                  {/* EXPANDED SUBJECT */}
 
                   {expanded && (
 
                     <div className="border-t border-gray-200 dark:border-zinc-800">
 
-
-                      {/* =====================================
-                          SUBJECT CONTROLS
-                      ===================================== */}
+                      {/* SUBJECT CONTROLS */}
 
                       <div className="flex flex-wrap gap-2 border-b border-gray-200 bg-gray-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40 sm:p-4">
 
@@ -1324,7 +1383,6 @@ function Syllabus() {
                           Mark All Complete
                         </button>
 
-
                         <button
                           onClick={() =>
                             clearSubject(
@@ -1335,9 +1393,6 @@ function Syllabus() {
                         >
                           Clear
                         </button>
-
-
-                        {/* ADD UNIT */}
 
                         <button
                           onClick={() =>
@@ -1355,10 +1410,7 @@ function Syllabus() {
 
                       </div>
 
-
-                      {/* =====================================
-                          UNITS
-                      ===================================== */}
+                      {/* UNITS */}
 
                       <div className="divide-y divide-gray-200 dark:divide-zinc-800">
 
@@ -1377,7 +1429,7 @@ function Syllabus() {
                                 (
                                   topic
                                 ) =>
-                                  completedTopics[
+                                  completedTopicMap[
                                     topicKey(
                                       subject,
                                       unit,
@@ -1386,15 +1438,11 @@ function Syllabus() {
                                   ]
                               ).length;
 
-
                             return (
                               <div
-                                key={
-                                  unit
-                                }
+                                key={unit}
                                 className="p-4 sm:p-5"
                               >
-
 
                                 {/* UNIT HEADER */}
 
@@ -1419,9 +1467,6 @@ function Syllabus() {
 
                                   </div>
 
-
-                                  {/* ADD TOPIC */}
-
                                   <button
                                     onClick={() =>
                                       openAddTopic(
@@ -1436,9 +1481,6 @@ function Syllabus() {
                                       size={17}
                                     />
                                   </button>
-
-
-                                  {/* DELETE UNIT */}
 
                                   <button
                                     onClick={() =>
@@ -1456,7 +1498,6 @@ function Syllabus() {
                                   </button>
 
                                 </div>
-
 
                                 {/* TOPICS */}
 
@@ -1500,10 +1541,11 @@ function Syllabus() {
                                           );
 
                                         const checked =
-                                          !!completedTopics[
-                                            key
-                                          ];
-
+                                          Boolean(
+                                            completedTopicMap[
+                                              key
+                                            ]
+                                          );
 
                                         return (
                                           <div
@@ -1516,8 +1558,6 @@ function Syllabus() {
                                                 : "border-gray-200 bg-gray-50 hover:bg-gray-100 dark:border-zinc-800 dark:bg-zinc-950/30 dark:hover:bg-zinc-900"
                                             }`}
                                           >
-
-                                            {/* CHECKBOX */}
 
                                             <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
 
@@ -1535,7 +1575,6 @@ function Syllabus() {
                                                 }
                                                 className="sr-only"
                                               />
-
 
                                               <div className="mt-0.5 shrink-0">
 
@@ -1557,7 +1596,6 @@ function Syllabus() {
 
                                               </div>
 
-
                                               <span
                                                 className={`min-w-0 text-sm leading-5 ${
                                                   checked
@@ -1571,9 +1609,6 @@ function Syllabus() {
                                               </span>
 
                                             </label>
-
-
-                                            {/* DELETE TOPIC */}
 
                                             <button
                                               onClick={() =>
@@ -1619,7 +1654,6 @@ function Syllabus() {
 
         </div>
 
-
         {/* =================================================
             BOTTOM INFO
         ================================================= */}
@@ -1628,16 +1662,15 @@ function Syllabus() {
 
           <p className="text-xs leading-5 text-gray-500 dark:text-zinc-600">
 
-            Your syllabus progress is saved automatically.
-            Added and deleted topics are also saved on this
-            device.
+            Your syllabus progress is saved automatically
+            and synchronized with your account. Added and
+            deleted topics are saved on this device.
 
           </p>
 
         </div>
 
       </div>
-
 
       {/* =====================================================
           ADD / DELETE MODAL
@@ -1659,7 +1692,6 @@ function Syllabus() {
             }
           >
 
-
             {/* MODAL HEADER */}
 
             <div className="flex items-start justify-between gap-4">
@@ -1678,7 +1710,6 @@ function Syllabus() {
 
               </div>
 
-
               <button
                 onClick={
                   closeModal
@@ -1691,7 +1722,6 @@ function Syllabus() {
               </button>
 
             </div>
-
 
             {/* DELETE CONFIRMATION */}
 
@@ -1734,7 +1764,6 @@ function Syllabus() {
               </div>
             )}
 
-
             {/* ADD FORM */}
 
             {(modal.type ===
@@ -1757,7 +1786,6 @@ function Syllabus() {
                     : "Topic name"}
 
                 </label>
-
 
                 <input
                   autoFocus
@@ -1809,7 +1837,6 @@ function Syllabus() {
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-purple-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-600"
                 />
 
-
                 <div className="mt-5 flex justify-end gap-2">
 
                   <button
@@ -1822,7 +1849,6 @@ function Syllabus() {
                     Cancel
                   </button>
 
-
                   <button
                     type="submit"
                     className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-purple-500"
@@ -1830,7 +1856,6 @@ function Syllabus() {
                     <Plus
                       size={16}
                     />
-
                     Add
                   </button>
 
@@ -1838,7 +1863,6 @@ function Syllabus() {
 
               </form>
             )}
-
 
             {/* DELETE BUTTONS */}
 
@@ -1859,7 +1883,6 @@ function Syllabus() {
                   Cancel
                 </button>
 
-
                 <button
                   type="button"
                   onClick={() => {
@@ -1879,7 +1902,6 @@ function Syllabus() {
                   <Trash2
                     size={16}
                   />
-
                   Delete
                 </button>
 
@@ -1894,7 +1916,6 @@ function Syllabus() {
     </>
   );
 }
-
 
 /* =========================================================
    PROGRESS STAT
@@ -1918,6 +1939,5 @@ function ProgressStat({
     </div>
   );
 }
-
 
 export default Syllabus;
