@@ -241,10 +241,19 @@ async function getSessions(req, res) {
 
 /*
 ====================================================
-START / RESUME ACTIVE STUDY
+START ACTIVE STUDY
 ====================================================
 
-Creates or updates the user's active timer.
+Creates a new active timer.
+
+IMPORTANT:
+Only ONE active timer is allowed per user.
+
+If the same user is already running a timer on
+another browser/device, this endpoint returns 409.
+
+A paused timer also prevents creation of a new
+separate timer. The user must resume or stop it.
 
 This DOES NOT create a StudySession.
 
@@ -289,15 +298,102 @@ async function startActiveStudy(req, res) {
       });
     }
 
-    const now = new Date();
+    /*
+    --------------------------------------------------
+    CHECK EXISTING ACTIVE TIMER
+    --------------------------------------------------
 
-    const activeStudy =
-      await prisma.activeStudySession.upsert({
+    DO NOT use upsert here.
+
+    An upsert would allow another browser/device
+    to overwrite the user's existing timer.
+    --------------------------------------------------
+    */
+
+    const existing =
+      await prisma.activeStudySession.findUnique({
         where: {
           userId,
         },
+      });
 
-        create: {
+    /*
+    --------------------------------------------------
+    TIMER ALREADY RUNNING
+    --------------------------------------------------
+    */
+
+    if (existing && existing.isRunning) {
+      return res.status(409).json({
+        success: false,
+
+        code:
+          "TIMER_ALREADY_RUNNING",
+
+        message:
+          "A timer is already running on another device or browser.",
+
+        activeStudy: {
+          subject: existing.subject,
+          topic: existing.topic,
+          type: existing.type,
+
+          accumulatedSeconds:
+            existing.accumulatedSeconds,
+
+          startedAt:
+            existing.startedAt,
+
+          lastHeartbeatAt:
+            existing.lastHeartbeatAt,
+        },
+      });
+    }
+
+    /*
+    --------------------------------------------------
+    TIMER EXISTS BUT IS PAUSED
+    --------------------------------------------------
+    */
+
+    if (existing && !existing.isRunning) {
+      return res.status(409).json({
+        success: false,
+
+        code:
+          "TIMER_ALREADY_EXISTS",
+
+        message:
+          "You already have a paused timer. Resume it or stop it before starting a new timer.",
+
+        activeStudy: {
+          subject: existing.subject,
+          topic: existing.topic,
+          type: existing.type,
+
+          accumulatedSeconds:
+            existing.accumulatedSeconds,
+
+          startedAt:
+            existing.startedAt,
+
+          pausedAt:
+            existing.pausedAt,
+        },
+      });
+    }
+
+    /*
+    --------------------------------------------------
+    NO EXISTING TIMER
+    --------------------------------------------------
+    */
+
+    const now = new Date();
+
+    const activeStudy =
+      await prisma.activeStudySession.create({
+        data: {
           userId,
 
           subject:
@@ -306,39 +402,29 @@ async function startActiveStudy(req, res) {
           topic:
             String(topic || "No topic"),
 
-          type: String(type),
+          type:
+            String(type),
 
-          startedAt: now,
+          startedAt:
+            now,
 
-          accumulatedSeconds: seconds,
+          accumulatedSeconds:
+            seconds,
 
-          isRunning: true,
+          isRunning:
+            true,
 
-          lastHeartbeatAt: now,
-        },
-
-        update: {
-          subject:
-            String(subject || "No subject"),
-
-          topic:
-            String(topic || "No topic"),
-
-          type: String(type),
-
-          accumulatedSeconds: seconds,
-
-          isRunning: true,
-
-          pausedAt: null,
-
-          lastHeartbeatAt: now,
+          lastHeartbeatAt:
+            now,
         },
       });
 
     return res.json({
       success: true,
-      message: "Active study started.",
+
+      message:
+        "Active study started.",
+
       activeStudy,
     });
   } catch (error) {
@@ -347,10 +433,108 @@ async function startActiveStudy(req, res) {
       error
     );
 
+    /*
+    --------------------------------------------------
+    UNIQUE CONSTRAINT PROTECTION
+    --------------------------------------------------
+
+    userId is @unique in ActiveStudySession.
+
+    If two start requests arrive at almost exactly
+    the same time, Prisma's unique constraint prevents
+    two active rows from being created.
+    --------------------------------------------------
+    */
+
+    if (error?.code === "P2002") {
+      return res.status(409).json({
+        success: false,
+
+        code:
+          "TIMER_ALREADY_RUNNING",
+
+        message:
+          "A timer is already running on another device or browser.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
+
       message:
         "Failed to start active study.",
+
+      error:
+        process.env.NODE_ENV === "production"
+          ? undefined
+          : error.message,
+    });
+  }
+}
+
+
+/*
+====================================================
+GET ACTIVE STUDY
+====================================================
+
+Returns the current user's active timer.
+
+This is used when the Timer page opens on another
+browser/device.
+
+Example:
+
+Device A:
+    Timer running
+
+Device B:
+    GET /api/sessions/active
+
+Device B receives the existing active timer.
+====================================================
+*/
+
+async function getActiveStudy(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication required.",
+      });
+    }
+
+    const activeStudy =
+      await prisma.activeStudySession.findUnique({
+        where: {
+          userId,
+        },
+      });
+
+    return res.json({
+      success: true,
+
+      activeStudy:
+        activeStudy || null,
+    });
+  } catch (error) {
+    console.error(
+      "GET ACTIVE STUDY ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+
+      message:
+        "Failed to retrieve active study.",
+
+      error:
+        process.env.NODE_ENV === "production"
+          ? undefined
+          : error.message,
     });
   }
 }
@@ -364,6 +548,10 @@ ACTIVE STUDY HEARTBEAT
 Called periodically while the timer is running.
 
 The frontend sends the latest elapsed seconds.
+
+This keeps the leaderboard updated and also lets
+the backend know that the browser/device is still
+actively running the timer.
 ====================================================
 */
 
@@ -438,11 +626,14 @@ async function heartbeatActiveStudy(req, res) {
                 existing.type
             ),
 
-          accumulatedSeconds: seconds,
+          accumulatedSeconds:
+            seconds,
 
-          isRunning: true,
+          isRunning:
+            true,
 
-          pausedAt: null,
+          pausedAt:
+            null,
 
           lastHeartbeatAt:
             new Date(),
@@ -473,10 +664,13 @@ async function heartbeatActiveStudy(req, res) {
 PAUSE ACTIVE STUDY
 ====================================================
 
-The active record remains in the database but
+The active record remains in the database.
+
 isRunning becomes false.
 
 Paused time is NOT counted by the leaderboard.
+
+The timer can later be resumed.
 ====================================================
 */
 
@@ -528,11 +722,14 @@ async function pauseActiveStudy(req, res) {
         },
 
         data: {
-          accumulatedSeconds: seconds,
+          accumulatedSeconds:
+            seconds,
 
-          isRunning: false,
+          isRunning:
+            false,
 
-          pausedAt: new Date(),
+          pausedAt:
+            new Date(),
 
           lastHeartbeatAt:
             new Date(),
@@ -541,7 +738,8 @@ async function pauseActiveStudy(req, res) {
 
     return res.json({
       success: true,
-      message: "Study paused.",
+      message:
+        "Study paused.",
       activeStudy,
     });
   } catch (error) {
@@ -562,6 +760,11 @@ async function pauseActiveStudy(req, res) {
 /*
 ====================================================
 RESUME ACTIVE STUDY
+====================================================
+
+Resumes the user's existing paused timer.
+
+It does NOT create another timer.
 ====================================================
 */
 
@@ -598,9 +801,11 @@ async function resumeActiveStudy(req, res) {
         },
 
         data: {
-          isRunning: true,
+          isRunning:
+            true,
 
-          pausedAt: null,
+          pausedAt:
+            null,
 
           lastHeartbeatAt:
             new Date(),
@@ -609,7 +814,8 @@ async function resumeActiveStudy(req, res) {
 
     return res.json({
       success: true,
-      message: "Study resumed.",
+      message:
+        "Study resumed.",
       activeStudy,
     });
   } catch (error) {
@@ -632,10 +838,15 @@ async function resumeActiveStudy(req, res) {
 STOP ACTIVE STUDY
 ====================================================
 
-Removes the active timer.
+Removes the active timer completely.
 
 The frontend should save the final StudySession
-separately through POST /api/sessions.
+separately through:
+
+POST /api/sessions
+
+This endpoint is used when the user stops/resets
+the timer or after the timer is saved.
 ====================================================
 */
 
@@ -659,8 +870,12 @@ async function stopActiveStudy(req, res) {
 
     return res.json({
       success: true,
-      message: "Active study stopped.",
-      deletedCount: deleted.count,
+
+      message:
+        "Active study stopped.",
+
+      deletedCount:
+        deleted.count,
     });
   } catch (error) {
     console.error(
@@ -690,27 +905,29 @@ study time for the selected day.
 
 Study time is returned in seconds.
 
-For TODAY:
+TODAY:
     completed StudySession time
     +
     currently running ActiveStudySession time
 
-For YESTERDAY:
-    only completed StudySession time
+YESTERDAY:
+    completed StudySession time only
 
-Active timers are counted only when their
-heartbeat is recent.
+Active timers are counted only when their heartbeat
+is recent.
 ====================================================
 */
 
 async function getLeaderboard(req, res) {
   try {
-    const currentUserId = getUserId(req);
+    const currentUserId =
+      getUserId(req);
 
     if (!currentUserId) {
       return res.status(401).json({
         success: false,
-        message: "User authentication required.",
+        message:
+          "User authentication required.",
       });
     }
 
@@ -733,31 +950,31 @@ async function getLeaderboard(req, res) {
 
     const now = new Date();
 
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
+    const startOfToday =
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
 
     let startDate;
 
-    if (selectedDate === "yesterday") {
-      startDate = new Date(
-        startOfToday
-      );
+    if (
+      selectedDate === "yesterday"
+    ) {
+      startDate =
+        new Date(startOfToday);
 
       startDate.setDate(
         startDate.getDate() - 1
       );
     } else {
-      startDate = new Date(
-        startOfToday
-      );
+      startDate =
+        new Date(startOfToday);
     }
 
-    const endDate = new Date(
-      startDate
-    );
+    const endDate =
+      new Date(startDate);
 
     endDate.setDate(
       endDate.getDate() + 1
@@ -799,10 +1016,10 @@ async function getLeaderboard(req, res) {
             },
 
             /*
-            ------------------------------------------------
-            Fallback for older records that don't have
-            completedAt.
-            ------------------------------------------------
+            ------------------------------------------
+            Fallback for older records that don't
+            have completedAt.
+            ------------------------------------------
             */
 
             {
@@ -831,7 +1048,9 @@ async function getLeaderboard(req, res) {
     const studyTimeByUser =
       new Map();
 
-    for (const session of sessions) {
+    for (
+      const session of sessions
+    ) {
       const previousTime =
         studyTimeByUser.get(
           session.userId
@@ -840,7 +1059,9 @@ async function getLeaderboard(req, res) {
       studyTimeByUser.set(
         session.userId,
         previousTime +
-          Number(session.duration || 0)
+          Number(
+            session.duration || 0
+          )
       );
     }
 
@@ -858,7 +1079,9 @@ async function getLeaderboard(req, res) {
     --------------------------------------------------
     */
 
-    if (selectedDate === "today") {
+    if (
+      selectedDate === "today"
+    ) {
       const heartbeatCutoff =
         new Date(
           now.getTime() -
@@ -887,22 +1110,25 @@ async function getLeaderboard(req, res) {
         });
 
       /*
-      ------------------------------------------------
-      Add currently running time.
-      ------------------------------------------------
+      ----------------------------------------------
+      ADD CURRENTLY RUNNING TIME
+      ----------------------------------------------
       */
 
-      for (const active of activeStudies) {
+      for (
+        const active of activeStudies
+      ) {
         let activeSeconds =
           Number(
             active.accumulatedSeconds || 0
           );
 
         /*
-        ----------------------------------------------
-        If the active timer started today,
-        its accumulated seconds are fully counted.
-        ----------------------------------------------
+        --------------------------------------------
+        Timer started today.
+
+        Its accumulated seconds are fully counted.
+        --------------------------------------------
         */
 
         if (
@@ -912,18 +1138,19 @@ async function getLeaderboard(req, res) {
           // Nothing else required.
         } else {
           /*
-          --------------------------------------------
+          ------------------------------------------
           Timer crossed midnight.
 
-          We conservatively count only time that
-          could have accumulated since today's
+          Conservatively count only the amount
+          that could have accumulated since today's
           beginning.
-          --------------------------------------------
+          ------------------------------------------
           */
 
           const secondsSinceStartOfToday =
             Math.max(
               0,
+
               Math.floor(
                 (
                   now.getTime() -
@@ -946,6 +1173,7 @@ async function getLeaderboard(req, res) {
 
         studyTimeByUser.set(
           active.userId,
+
           previousTime +
             activeSeconds
         );
@@ -960,9 +1188,11 @@ async function getLeaderboard(req, res) {
 
     const leaderboard =
       users.map((user) => ({
-        userId: user.id,
+        userId:
+          user.id,
 
-        name: user.name,
+        name:
+          user.name,
 
         studyTime:
           studyTimeByUser.get(
@@ -985,21 +1215,23 @@ async function getLeaderboard(req, res) {
     --------------------------------------------------
     */
 
-    leaderboard.sort((a, b) => {
-      if (
-        b.studyTime !==
-        a.studyTime
-      ) {
-        return (
-          b.studyTime -
+    leaderboard.sort(
+      (a, b) => {
+        if (
+          b.studyTime !==
           a.studyTime
+        ) {
+          return (
+            b.studyTime -
+            a.studyTime
+          );
+        }
+
+        return a.name.localeCompare(
+          b.name
         );
       }
-
-      return a.name.localeCompare(
-        b.name
-      );
-    });
+    );
 
     /*
     --------------------------------------------------
@@ -1010,7 +1242,9 @@ async function getLeaderboard(req, res) {
     const rankedLeaderboard =
       leaderboard.map(
         (user, index) => ({
-          rank: index + 1,
+          rank:
+            index + 1,
+
           ...user,
         })
       );
@@ -1024,7 +1258,8 @@ async function getLeaderboard(req, res) {
     return res.json({
       success: true,
 
-      date: selectedDate,
+      date:
+        selectedDate,
 
       startDate:
         startDate.toISOString(),
@@ -1043,8 +1278,10 @@ async function getLeaderboard(req, res) {
 
     return res.status(500).json({
       success: false,
+
       message:
         "Failed to retrieve study leaderboard.",
+
       error:
         process.env.NODE_ENV === "production"
           ? undefined
@@ -1062,13 +1299,17 @@ DELETE ONE SESSION
 
 async function deleteSession(req, res) {
   try {
-    const userId = getUserId(req);
-    const { id } = req.params;
+    const userId =
+      getUserId(req);
+
+    const { id } =
+      req.params;
 
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "User authentication required.",
+        message:
+          "User authentication required.",
       });
     }
 
@@ -1082,11 +1323,15 @@ async function deleteSession(req, res) {
     if (!session) {
       return res.status(404).json({
         success: false,
-        message: "Session not found.",
+        message:
+          "Session not found.",
       });
     }
 
-    if (session.userId !== userId) {
+    if (
+      session.userId !==
+      userId
+    ) {
       return res.status(403).json({
         success: false,
         message:
@@ -1128,12 +1373,14 @@ DELETE ALL USER SESSIONS
 
 async function deleteAllSessions(req, res) {
   try {
-    const userId = getUserId(req);
+    const userId =
+      getUserId(req);
 
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "User authentication required.",
+        message:
+          "User authentication required.",
       });
     }
 
@@ -1146,9 +1393,12 @@ async function deleteAllSessions(req, res) {
 
     return res.json({
       success: true,
+
       message:
         "All study sessions deleted successfully.",
-      deletedCount: result.count,
+
+      deletedCount:
+        result.count,
     });
   } catch (error) {
     console.error(
@@ -1176,6 +1426,7 @@ module.exports = {
   getSessions,
 
   startActiveStudy,
+  getActiveStudy,
   heartbeatActiveStudy,
   pauseActiveStudy,
   resumeActiveStudy,

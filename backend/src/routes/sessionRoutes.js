@@ -5,6 +5,7 @@ const {
   getSessions,
 
   startActiveStudy,
+  getActiveStudy,
   heartbeatActiveStudy,
   pauseActiveStudy,
   resumeActiveStudy,
@@ -38,16 +39,24 @@ STUDY SESSION ROUTES
 
 /*
 POST /api/sessions
-Create a completed study session
+
+Create a completed study session.
 */
-router.post("/", createSession);
+router.post(
+  "/",
+  createSession
+);
 
 
 /*
 GET /api/sessions
-Get current user's study sessions
+
+Get current user's study sessions.
 */
-router.get("/", getSessions);
+router.get(
+  "/",
+  getSessions
+);
 
 
 /*
@@ -57,10 +66,30 @@ ACTIVE STUDY TIMER
 */
 
 /*
+GET /api/sessions/active
+
+Check whether the current user already has
+an active or paused timer.
+
+This is important when the same account is opened
+on another browser/device.
+*/
+router.get(
+  "/active",
+  getActiveStudy
+);
+
+
+/*
 POST /api/sessions/active/start
 
-Start or resume tracking the currently running
-study timer.
+Start a new timer.
+
+If this user already has a running timer on
+another device/browser, the backend returns:
+
+HTTP 409
+TIMER_ALREADY_RUNNING
 */
 router.post(
   "/active/start",
@@ -73,7 +102,7 @@ POST /api/sessions/active/heartbeat
 
 Update the currently running timer.
 
-The frontend will call this periodically while
+The frontend calls this periodically while
 the timer is running.
 */
 router.post(
@@ -96,7 +125,7 @@ router.post(
 /*
 POST /api/sessions/active/resume
 
-Resume a paused timer.
+Resume the existing paused timer.
 */
 router.post(
   "/active/resume",
@@ -122,14 +151,15 @@ router.post(
 ====================================================
 LEADERBOARD
 ====================================================
+*/
 
+/*
 GET /api/sessions/leaderboard?date=today
+
 GET /api/sessions/leaderboard?date=yesterday
 
 Returns all users ranked by study time.
-====================================================
 */
-
 router.get(
   "/leaderboard",
   getLeaderboard
