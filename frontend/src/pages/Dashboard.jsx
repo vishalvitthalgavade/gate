@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -14,6 +14,7 @@ import {
 
 import { GATE_SYLLABUS } from "../data/syllabus";
 import { useStudy } from "../context/useStudy";
+import { useAuth } from "../context/AuthContext";
 
 function formatStudyTime(totalSeconds) {
   const seconds = Math.max(0, Number(totalSeconds) || 0);
@@ -178,6 +179,42 @@ function Dashboard() {
     isSyncing,
     isOnline,
   } = useStudy();
+  const { user } = useAuth();
+
+  const goalStorageKey = `gate-study-goals:${user?.id || "local"}`;
+  const [goals, setGoals] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(goalStorageKey) || "null");
+      return {
+        daily: Number(saved?.daily) > 0 ? Number(saved.daily) : 120 * 60,
+        weekly: Number(saved?.weekly) > 0 ? Number(saved.weekly) : 14 * 60 * 60,
+      };
+    } catch {
+      return { daily: 120 * 60, weekly: 14 * 60 * 60 };
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(goalStorageKey) || "null");
+      if (saved) {
+        setGoals({
+          daily: Number(saved.daily) > 0 ? Number(saved.daily) : 120 * 60,
+          weekly: Number(saved.weekly) > 0 ? Number(saved.weekly) : 14 * 60 * 60,
+        });
+      }
+    } catch {
+      // Goal preferences are optional and should never block the app.
+    }
+  }, [goalStorageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(goalStorageKey, JSON.stringify(goals));
+    } catch {
+      // Goal preferences are optional and should never block the app.
+    }
+  }, [goalStorageKey, goals]);
 
 
   // --------------------------------------------------
@@ -205,6 +242,38 @@ function Dashboard() {
       0
     );
   }, [todaySessions]);
+
+  const weeklySeconds = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - start.getDay());
+
+    return sessions.reduce((total, session) => {
+      const value = new Date(getSessionDate(session));
+      if (Number.isNaN(value.getTime()) || value < start || value > now) {
+        return total;
+      }
+      return total + Number(session.duration || 0);
+    }, 0);
+  }, [sessions]);
+
+  const dailyGoalProgress = Math.min(100, Math.round((todaySeconds / goals.daily) * 100));
+  const weeklyGoalProgress = Math.min(100, Math.round((weeklySeconds / goals.weekly) * 100));
+
+  const latestSession = useMemo(() => {
+    return [...sessions]
+      .sort((a, b) => new Date(getSessionDate(b)).getTime() - new Date(getSessionDate(a)).getTime())[0] || null;
+  }, [sessions]);
+
+  const insight = useMemo(() => {
+    if (!sessions.length) return "Start your first session to unlock personalized study insights.";
+
+    const longest = sessions.reduce((best, item) =>
+      Number(item.duration || 0) > Number(best.duration || 0) ? item : best
+    );
+    return `Your longest recorded session is ${formatStudyTime(longest.duration)}${longest.subject ? ` in ${longest.subject}` : ""}.`;
+  }, [sessions]);
 
 
   // --------------------------------------------------
@@ -330,11 +399,15 @@ function Dashboard() {
           </p>
 
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-            Dashboard
+            {(() => {
+              const hour = new Date().getHours();
+              const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+              return `${greeting}${user?.name ? `, ${user.name.split(" ")[0]}` : ""}`;
+            })()}
           </h1>
 
           <p className="mt-1.5 max-w-md text-xs leading-5 text-gray-500 dark:text-zinc-500 sm:mt-2 sm:text-base">
-            Track your GATE CSE preparation.
+            Track your GATE CSE preparation and stay consistent.
           </p>
 
         </div>
@@ -345,6 +418,14 @@ function Dashboard() {
         >
           <Play size={18} />
           Start Studying
+        </Link>
+
+        <Link
+          to="/statistics"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-300 hover:text-purple-700 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:border-purple-500/40 dark:hover:text-white sm:w-auto"
+        >
+          View Progress
+          <ArrowRight size={17} />
         </Link>
 
       </div>
@@ -522,6 +603,76 @@ function Dashboard() {
 
         </div>
 
+      </div>
+
+
+      {/* =====================================================
+          GOALS + INSIGHTS
+      ===================================================== */}
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-6 lg:col-span-2">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-purple-500">Daily focus</p>
+              <h2 className="mt-1 text-lg font-bold text-gray-900 dark:text-white">Study goals</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-zinc-500">Goals are stored locally as your personal preference; progress uses saved study sessions.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <select
+                aria-label="Daily study goal"
+                value={goals.daily}
+                onChange={(event) => setGoals((current) => ({ ...current, daily: Number(event.target.value) }))}
+                className="min-h-10 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-800 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+              >
+                {[30, 60, 90, 120, 180, 240].map((minutes) => (
+                  <option key={minutes} value={minutes * 60}>{minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`} daily</option>
+                ))}
+              </select>
+              <select
+                aria-label="Weekly study goal"
+                value={goals.weekly}
+                onChange={(event) => setGoals((current) => ({ ...current, weekly: Number(event.target.value) }))}
+                className="min-h-10 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-800 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+              >
+                {[7, 10, 14, 18, 21, 28].map((hours) => (
+                  <option key={hours} value={hours * 60 * 60}>{hours}h weekly</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <GoalProgress label="Today's Goal" value={todaySeconds} goal={goals.daily} progress={dailyGoalProgress} />
+            <GoalProgress label="Weekly Goal" value={weeklySeconds} goal={goals.weekly} progress={weeklyGoalProgress} />
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link to="/timer" className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-purple-600/15">
+              <Play size={15} /> Start Timer
+            </Link>
+            <Link to="/syllabus" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:border-zinc-700 dark:text-zinc-200">
+              <BookOpen size={15} /> View Syllabus
+            </Link>
+            <Link to="/history" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:border-zinc-700 dark:text-zinc-200">
+              <CalendarDays size={15} /> History
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-500">Study insight</p>
+          <h2 className="mt-1 text-lg font-bold text-gray-900 dark:text-white">Keep your momentum</h2>
+          <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-zinc-400">{insight}</p>
+
+          {latestSession ? (
+            <Link to="/timer" className="mt-5 block rounded-xl border border-purple-500/15 bg-purple-500/[0.04] p-4 transition hover:border-purple-500/30 hover:bg-purple-500/[0.07]">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-500">Continue studying</p>
+              <p className="mt-1 truncate text-sm font-semibold text-gray-900 dark:text-white">{latestSession.subject || "Your last subject"}</p>
+              <p className="mt-1 truncate text-xs text-gray-500 dark:text-zinc-500">{latestSession.topic || "Continue from your last session"}</p>
+            </Link>
+          ) : null}
+        </div>
       </div>
 
 
@@ -710,6 +861,24 @@ function Dashboard() {
 
       </div>
 
+    </div>
+  );
+}
+
+
+function GoalProgress({ label, value, goal, progress }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/45">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
+        <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{progress}%</span>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-800">
+        <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-violet-600 transition-all duration-500" style={{ width: `${progress}%` }} />
+      </div>
+      <p className="mt-2 text-xs text-gray-500 dark:text-zinc-500">
+        {formatStudyTime(value)} / {formatStudyTime(goal)}
+      </p>
     </div>
   );
 }

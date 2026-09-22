@@ -163,7 +163,7 @@ function App() {
                         setIsOpen={setSidebarOpen}
                       />
 
-                      <div className="md:ml-64">
+                      <div className="md:ml-[272px]">
 
                         {/* ==================================
                             MOBILE HEADER
@@ -175,9 +175,10 @@ function App() {
                             onClick={() =>
                               setSidebarOpen(true)
                             }
-                            className="rounded-lg p-2 text-zinc-300 hover:bg-zinc-900"
+                            aria-label="Open navigation"
+                            className="rounded-xl p-2 text-zinc-500 hover:bg-black/5 hover:text-gray-900 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white"
                           >
-                            <Menu size={24} />
+                            <Menu size={22} />
                           </button>
 
                           <div className="ml-3 min-w-0">
