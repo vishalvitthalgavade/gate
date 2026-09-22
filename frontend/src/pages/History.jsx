@@ -9,6 +9,8 @@ import {
   History as HistoryIcon,
   AlertTriangle,
   TrendingUp,
+  ChevronDown,
+  ChevronRight,
   BarChart3,
 } from "lucide-react";
 
@@ -255,6 +257,7 @@ export default function History() {
   const [filterType, setFilterType] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState("all");
+  const [collapsedDays, setCollapsedDays] = useState(null);
 
   const [deleteModal, setDeleteModal] = useState({
     open: false,
@@ -491,6 +494,26 @@ export default function History() {
       return dateB - dateA;
     });
   }, [filteredSessions]);
+
+  const todayKey = useMemo(() => getDateKey(new Date()), []);
+
+  const toggleDay = (dateKey) => {
+    if (dateKey === todayKey) return;
+
+    setCollapsedDays((current) => {
+      const next = current
+        ? new Set(current)
+        : new Set(
+            groupedSessions
+              .map(([key]) => key)
+              .filter((key) => key !== todayKey)
+          );
+
+      if (next.has(dateKey)) next.delete(dateKey);
+      else next.add(dateKey);
+      return next;
+    });
+  };
 
   const handleDelete = (id) => {
     setDeleteModal({
@@ -945,31 +968,48 @@ export default function History() {
               return (
                 <section key={dateKey}>
                   {/* DATE HEADER */}
-                  <div className="mb-2 flex items-center justify-between gap-2 px-0.5 sm:mb-3 sm:gap-3 sm:px-1">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <CalendarDays
-                        size={17}
-                        className="shrink-0 text-purple-500 dark:text-purple-400"
-                      />
+                  {(() => {
+                    const isToday = dateKey === todayKey;
+                    const isCollapsed = !isToday && (collapsedDays === null ? true : collapsedDays.has(dateKey));
 
-                      <h2 className="truncate font-semibold text-gray-900 dark:text-white">
-                        {dateKey === "unknown"
-                          ? "Unknown Date"
-                          : formatDate(group.dateValue)}
-                      </h2>
-                    </div>
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => toggleDay(dateKey)}
+                          aria-expanded={!isCollapsed}
+                          aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${formatDate(group.dateValue)} sessions`}
+                          className="mb-2 flex w-full items-center justify-between gap-2 rounded-xl px-2 py-2 text-left transition hover:bg-purple-500/[0.04] sm:mb-3 sm:gap-3 sm:px-2"
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            {isCollapsed ? (
+                              <ChevronRight size={17} className="shrink-0 text-purple-500 dark:text-purple-400" />
+                            ) : (
+                              <ChevronDown size={17} className="shrink-0 text-purple-500 dark:text-purple-400" />
+                            )}
+                            <CalendarDays size={17} className="hidden shrink-0 text-purple-500 dark:text-purple-400 sm:block" />
+                            <h2 className="truncate font-semibold text-gray-900 dark:text-white">
+                              {isToday ? "Today" : dateKey === "unknown" ? "Unknown Date" : formatDate(group.dateValue)}
+                            </h2>
+                            {isToday && (
+                              <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300">
+                                Always visible
+                              </span>
+                            )}
+                          </div>
 
-                    <span className="shrink-0 text-[11px] text-gray-500 dark:text-zinc-500 sm:text-xs">
-                      {group.sessions.length}{" "}
-                      {group.sessions.length === 1 ? "session" : "sessions"}
-                      {" · "}
-                      {formatDuration(dayTotal)}
-                    </span>
-                  </div>
+                          <span className="shrink-0 text-[11px] text-gray-500 dark:text-zinc-500 sm:text-xs">
+                            {group.sessions.length}{" "}
+                            {group.sessions.length === 1 ? "session" : "sessions"}
+                            {" · "}
+                            {formatDuration(dayTotal)}
+                          </span>
+                        </button>
 
-                  {/* SESSIONS */}
-                  <div className="space-y-2.5 sm:space-y-3">
-                    {group.sessions.map((session) => (
+                        {/* SESSIONS */}
+                        {!isCollapsed && (
+                          <div className="space-y-2.5 animate-[gate-collapse-in_.2s_ease-out] sm:space-y-3">
+                            {group.sessions.map((session) => (
                       <article
                         key={session.id || session.clientId}
                         className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700 sm:rounded-2xl sm:p-5"
@@ -1054,8 +1094,12 @@ export default function History() {
                           </div>
                         </div>
                       </article>
-                    ))}
-                  </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </section>
               );
             })}

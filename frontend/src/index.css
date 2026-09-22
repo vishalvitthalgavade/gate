@@ -325,3 +325,326 @@ main .border-zinc-700 {
     max-width: 100%;
   }
 }
+
+/* =========================================================
+   GATE CSE — refined product layer
+   ========================================================= */
+:root {
+  --gate-purple-1: #8b5cf6;
+  --gate-purple-2: #6d28d9;
+  --gate-focus: rgba(139,92,246,.24);
+  --gate-card-radius: 20px;
+}
+
+html.dark {
+  --gate-bg: #080c15;
+  --gate-surface-solid: #101725;
+  --gate-border: rgba(148,163,184,.13);
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 12% -8%, rgba(124,58,237,.075), transparent 30%),
+    radial-gradient(circle at 90% 4%, rgba(59,130,246,.045), transparent 26%);
+}
+
+html.dark body {
+  background-image:
+    radial-gradient(circle at 15% -12%, rgba(124,58,237,.13), transparent 34%),
+    radial-gradient(circle at 90% 0%, rgba(37,99,235,.06), transparent 28%);
+}
+
+/* Slightly more intentional default content surfaces. */
+main .rounded-2xl.border,
+main .rounded-xl.border {
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+
+main .rounded-2xl.border:hover {
+  border-color: rgba(139,92,246,.16);
+}
+
+/* Premium CTA treatment without changing button semantics. */
+main button.bg-purple-600,
+main a.bg-purple-600 {
+  background-image: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+}
+
+main button.bg-purple-600:focus-visible,
+main a.bg-purple-600:focus-visible {
+  box-shadow: 0 0 0 4px rgba(139,92,246,.18), 0 10px 26px rgba(109,40,217,.18);
+}
+
+/* History accordion animation. */
+@keyframes gate-collapse-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================
+   Authentication
+   ========================================================= */
+.gate-auth-shell {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(124,58,237,.16), transparent 42%),
+    var(--gate-bg);
+}
+
+.gate-auth-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .28;
+  background-image: linear-gradient(rgba(148,163,184,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.045) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+
+.gate-auth-orb {
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  border-radius: 999px;
+  filter: blur(90px);
+  pointer-events: none;
+  opacity: .13;
+}
+
+.gate-auth-orb-one { background: #7c3aed; top: -190px; left: -130px; }
+.gate-auth-orb-two { background: #2563eb; right: -170px; bottom: -220px; }
+
+.gate-auth-frame {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 430px);
+  animation: gate-page-enter .35s cubic-bezier(.22,1,.36,1) both;
+}
+
+.gate-auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  margin-bottom: 18px;
+}
+
+.gate-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(139,92,246,.35);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(139,92,246,.98), rgba(109,40,217,.96));
+  color: white;
+  box-shadow: 0 12px 34px rgba(109,40,217,.25);
+}
+
+.gate-brand-mark span {
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -.04em;
+}
+
+.gate-auth-brand-title {
+  margin: 0;
+  color: var(--gate-text);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+
+.gate-auth-brand-subtitle {
+  margin: 2px 0 0;
+  color: var(--gate-muted);
+  font-size: 11px;
+}
+
+.gate-auth-card {
+  position: relative;
+  width: 100%;
+  padding: 30px;
+  border: 1px solid var(--gate-border) !important;
+  border-radius: 24px !important;
+  background: rgba(255,255,255,.78) !important;
+  box-shadow: 0 30px 80px rgba(15,23,42,.12), 0 8px 30px rgba(15,23,42,.06) !important;
+  backdrop-filter: blur(20px);
+}
+
+html.dark .gate-auth-card {
+  background: rgba(15,23,42,.78) !important;
+  box-shadow: 0 30px 80px rgba(0,0,0,.35), 0 8px 30px rgba(0,0,0,.18) !important;
+}
+
+.gate-auth-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin-bottom: 25px;
+}
+
+.gate-auth-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(139,92,246,.18);
+  border-radius: 12px;
+  background: rgba(139,92,246,.10);
+  color: var(--gate-accent);
+}
+
+.gate-auth-heading h1 {
+  margin: 0;
+  color: var(--gate-text);
+  font-size: clamp(1.45rem, 3vw, 1.75rem);
+  line-height: 1.15;
+  letter-spacing: -.035em;
+  font-weight: 800;
+}
+
+.gate-auth-heading p {
+  margin: 7px 0 0;
+  color: var(--gate-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.gate-auth-error {
+  margin: 0 0 18px;
+  padding: 11px 13px;
+  border: 1px solid rgba(239,68,68,.22);
+  border-radius: 12px;
+  background: rgba(239,68,68,.07);
+  color: #ef4444;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+html.dark .gate-auth-error { color: #fca5a5; background: rgba(127,29,29,.18); }
+
+.gate-auth-form { display: grid; gap: 17px; }
+
+.gate-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--gate-text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.gate-input-wrap {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  gap: 10px;
+  padding: 0 13px;
+  border: 1px solid var(--gate-border);
+  border-radius: 13px;
+  background: rgba(248,250,252,.78);
+  color: #94a3b8;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease, transform .18s ease;
+}
+
+html.dark .gate-input-wrap { background: rgba(2,6,23,.36); }
+.gate-input-wrap:focus-within {
+  border-color: rgba(139,92,246,.65);
+  box-shadow: 0 0 0 4px rgba(139,92,246,.10), 0 8px 22px rgba(109,40,217,.06);
+}
+
+.gate-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  color: var(--gate-text) !important;
+  box-shadow: none !important;
+  font-size: 14px;
+}
+
+.gate-input-wrap input::placeholder { color: #94a3b8; }
+.gate-password-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  margin-right: -6px;
+  border-radius: 9px;
+  color: #94a3b8;
+}
+.gate-password-toggle:hover { background: rgba(148,163,184,.10); color: var(--gate-text); }
+
+.gate-password-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  color: var(--gate-muted);
+  font-size: 11px;
+}
+.gate-password-hint svg { color: #22c55e; }
+
+.gate-auth-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 4px;
+  border: 1px solid rgba(139,92,246,.2);
+  border-radius: 13px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: white;
+  font-size: 14px;
+  font-weight: 750;
+  box-shadow: 0 10px 25px rgba(109,40,217,.20);
+}
+.gate-auth-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(109,40,217,.27); filter: brightness(1.04); }
+.gate-auth-submit:active:not(:disabled) { transform: translateY(1px); }
+.gate-auth-submit:disabled { cursor: not-allowed; opacity: .58; }
+
+.gate-button-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255,255,255,.38);
+  border-top-color: white;
+  border-radius: 999px;
+  animation: gate-spin .7s linear infinite;
+}
+@keyframes gate-spin { to { transform: rotate(360deg); } }
+
+.gate-auth-switch {
+  margin: 21px 0 0;
+  color: var(--gate-muted);
+  text-align: center;
+  font-size: 12px;
+}
+.gate-auth-switch a { color: var(--gate-accent); font-weight: 700; }
+.gate-auth-switch a:hover { color: var(--gate-accent-strong); }
+
+@media (max-width: 520px) {
+  .gate-auth-shell { align-items: flex-start; padding: 28px 15px 36px; overflow-y: auto; }
+  .gate-auth-frame { margin: auto 0; }
+  .gate-auth-card { padding: 23px 18px; border-radius: 20px !important; }
+  .gate-auth-heading { margin-bottom: 21px; }
+  .gate-auth-brand { margin-bottom: 14px; }
+  .gate-auth-orb { transform: scale(.72); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-auth-frame, .gate-button-spinner { animation: none !important; }
+}

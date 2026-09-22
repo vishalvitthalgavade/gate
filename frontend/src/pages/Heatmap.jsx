@@ -117,53 +117,30 @@ function getSessionDate(session) {
 ========================================================= */
 
 function getIntensityClass(seconds, theme) {
-  const minutes =
-    (Number(seconds) || 0) / 60;
+  // Presentation-only mapping: 6 hours is the maximum visual intensity.
+  // Study-time calculation/storage remains unchanged.
+  const hours = Math.max(0, Number(seconds) || 0) / 3600;
 
-  /* -------------------------
-     DARK MODE
-  ------------------------- */
+  if (hours <= 0) {
+    return theme === "dark"
+      ? "bg-[#161b22] border-[#30363d]"
+      : "bg-gray-100 border-gray-200";
+  }
 
   if (theme === "dark") {
-    if (minutes <= 0) {
-      return "bg-[#161b22] border-[#30363d]";
-    }
-
-    if (minutes < 30) {
-      return "bg-[#0e4429] border-[#0e4429]";
-    }
-
-    if (minutes < 60) {
-      return "bg-[#006d32] border-[#006d32]";
-    }
-
-    if (minutes < 120) {
-      return "bg-[#26a641] border-[#26a641]";
-    }
-
+    if (hours < 1) return "bg-[#0e4429] border-[#0e4429]";
+    if (hours < 2) return "bg-[#006d32] border-[#006d32]";
+    if (hours < 3) return "bg-[#12843f] border-[#12843f]";
+    if (hours < 4) return "bg-[#26a641] border-[#26a641]";
+    if (hours < 5) return "bg-[#2fb94a] border-[#2fb94a]";
     return "bg-[#39d353] border-[#39d353]";
   }
 
-  /* -------------------------
-     LIGHT MODE
-  ------------------------- */
-
-  if (minutes <= 0) {
-    return "bg-gray-100 border-gray-200";
-  }
-
-  if (minutes < 30) {
-    return "bg-green-100 border-green-200";
-  }
-
-  if (minutes < 60) {
-    return "bg-green-300 border-green-300";
-  }
-
-  if (minutes < 120) {
-    return "bg-green-500 border-green-500";
-  }
-
+  if (hours < 1) return "bg-green-100 border-green-200";
+  if (hours < 2) return "bg-green-200 border-green-300";
+  if (hours < 3) return "bg-green-300 border-green-300";
+  if (hours < 4) return "bg-green-400 border-green-400";
+  if (hours < 5) return "bg-green-500 border-green-500";
   return "bg-green-700 border-green-700";
 }
 
@@ -790,36 +767,27 @@ export default function Heatmap() {
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4 dark:border-zinc-900">
 
-          <div className="flex items-center gap-2 text-[10px] text-gray-400 dark:text-zinc-600">
+          <div className="flex flex-wrap items-center gap-2 text-[10px] text-gray-400 dark:text-zinc-600">
+            <span>0h</span>
 
-            <span>Less</span>
-
-            {/* Light empty */}
             <div className="h-3 w-3 rounded-[2px] border border-gray-200 bg-gray-100 dark:hidden" />
-
-            {/* Dark empty */}
             <div className="hidden h-3 w-3 rounded-[2px] border border-[#30363d] bg-[#161b22] dark:block" />
 
-            {/* Light levels */}
             <div className="h-3 w-3 rounded-[2px] border border-green-200 bg-green-100 dark:hidden" />
-
+            <div className="h-3 w-3 rounded-[2px] border border-green-300 bg-green-200 dark:hidden" />
             <div className="h-3 w-3 rounded-[2px] border border-green-300 bg-green-300 dark:hidden" />
-
+            <div className="h-3 w-3 rounded-[2px] border border-green-400 bg-green-400 dark:hidden" />
             <div className="h-3 w-3 rounded-[2px] border border-green-500 bg-green-500 dark:hidden" />
-
             <div className="h-3 w-3 rounded-[2px] border border-green-700 bg-green-700 dark:hidden" />
 
-            {/* Dark levels */}
             <div className="hidden h-3 w-3 rounded-[2px] border border-[#0e4429] bg-[#0e4429] dark:block" />
-
             <div className="hidden h-3 w-3 rounded-[2px] border border-[#006d32] bg-[#006d32] dark:block" />
-
+            <div className="hidden h-3 w-3 rounded-[2px] border border-[#12843f] bg-[#12843f] dark:block" />
             <div className="hidden h-3 w-3 rounded-[2px] border border-[#26a641] bg-[#26a641] dark:block" />
-
+            <div className="hidden h-3 w-3 rounded-[2px] border border-[#2fb94a] bg-[#2fb94a] dark:block" />
             <div className="hidden h-3 w-3 rounded-[2px] border border-[#39d353] bg-[#39d353] dark:block" />
 
-            <span>More</span>
-
+            <span>6h+</span>
           </div>
 
 
