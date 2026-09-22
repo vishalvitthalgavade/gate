@@ -129,28 +129,47 @@ with in the background afterwards.
 */
 
 function computeSimpleHydration(saved) {
-  const baseSeconds = Number(saved?.simpleSeconds || 0);
+  const savedSeconds = Number(saved?.simpleSeconds || 0);
 
   if (saved?.simpleRunning && saved?.simpleStartedAt) {
+    /*
+     * `simpleSeconds` is the live display value that was last persisted.
+     * It is NOT the base value for the current running segment. Adding the
+     * full time since `simpleStartedAt` to it after a refresh double-counts
+     * time that has already been included in `simpleSeconds`.
+     *
+     * Persist the actual segment base when available. For older saved state,
+     * infer it safely: an active timer that has never been paused has the
+     * same session and segment start; a resumed timer has different values.
+     */
+    const inferredBase =
+      saved?.simpleBase != null
+        ? Number(saved.simpleBase)
+        : saved?.simpleSessionStartedAt &&
+            saved?.simpleStartedAt &&
+            Number(saved.simpleSessionStartedAt) !== Number(saved.simpleStartedAt)
+          ? savedSeconds
+          : 0;
+
     const extra = Math.max(
       0,
-      Math.floor((Date.now() - saved.simpleStartedAt) / 1000)
+      Math.floor((Date.now() - Number(saved.simpleStartedAt)) / 1000)
     );
 
-    const seconds = baseSeconds + extra;
+    const seconds = inferredBase + extra;
 
     return {
       seconds,
       running: true,
-      base: seconds,
-      startedAt: Date.now(),
+      base: inferredBase,
+      startedAt: Number(saved.simpleStartedAt),
     };
   }
 
   return {
-    seconds: baseSeconds,
+    seconds: savedSeconds,
     running: false,
-    base: baseSeconds,
+    base: savedSeconds,
     startedAt: null,
   };
 }
@@ -527,16 +546,35 @@ export function TimerProvider({ children }) {
       return;
     }
 
-    const result = await startActiveSimpleStudy();
-    if (!result.ok) return false;
+    /*
+     * Start the local clock immediately. The API registration happens in
+     * parallel so network latency is not visible as a delay after pressing
+     * Start. If registration fails, roll the local start back.
+     */
+    const base = simpleSeconds;
+    const startedAt = Date.now();
 
-    simpleBaseRef.current = simpleSeconds;
-    simpleStartedAtRef.current = Date.now();
+    simpleBaseRef.current = base;
+    simpleStartedAtRef.current = startedAt;
     if (!simpleSessionStartedAtRef.current) {
-      simpleSessionStartedAtRef.current = simpleStartedAtRef.current;
+      simpleSessionStartedAtRef.current = startedAt;
     }
     setTimerMode("simple");
     setSimpleRunning(true);
+
+    const result = await startActiveSimpleStudy();
+    if (!result.ok) {
+      const currentElapsed = Math.max(
+        0,
+        base + Math.floor((Date.now() - startedAt) / 1000)
+      );
+      simpleBaseRef.current = currentElapsed;
+      simpleStartedAtRef.current = null;
+      setSimpleSeconds(currentElapsed);
+      setSimpleRunning(false);
+      return false;
+    }
+
     return true;
   }, [simpleSeconds, startActiveSimpleStudy]);
 
@@ -869,6 +907,7 @@ export function TimerProvider({ children }) {
       pomodoroSeconds,
       pomodoroRunning,
       completedPomodoros,
+      simpleBase: simpleBaseRef.current,
       simpleStartedAt: simpleStartedAtRef.current,
       simpleSessionStartedAt: simpleSessionStartedAtRef.current,
       pomodoroEndAt: pomodoroEndAtRef.current,
