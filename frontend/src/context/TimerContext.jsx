@@ -310,6 +310,7 @@ export function TimerProvider({ children }) {
   const selectedTopicRef = useRef(selectedTopic);
   const timerModeRef = useRef(timerMode);
   const restoredRef = useRef(false);
+  const simpleStartInFlightRef = useRef(false);
   const timerChannelRef = useRef(null);
 
   pomodoroModeRef.current = pomodoroMode;
@@ -554,6 +555,11 @@ export function TimerProvider({ children }) {
     const base = simpleSeconds;
     const startedAt = Date.now();
 
+    // Mark registration as in-flight so the one-time server reconciliation
+    // cannot race this first Start click and interpret its own pending
+    // registration as a failed timer.
+    simpleStartInFlightRef.current = true;
+
     simpleBaseRef.current = base;
     simpleStartedAtRef.current = startedAt;
     if (!simpleSessionStartedAtRef.current) {
@@ -562,20 +568,24 @@ export function TimerProvider({ children }) {
     setTimerMode("simple");
     setSimpleRunning(true);
 
-    const result = await startActiveSimpleStudy();
-    if (!result.ok) {
-      const currentElapsed = Math.max(
-        0,
-        base + Math.floor((Date.now() - startedAt) / 1000)
-      );
-      simpleBaseRef.current = currentElapsed;
-      simpleStartedAtRef.current = null;
-      setSimpleSeconds(currentElapsed);
-      setSimpleRunning(false);
-      return false;
-    }
+    try {
+      const result = await startActiveSimpleStudy();
+      if (!result.ok) {
+        const currentElapsed = Math.max(
+          0,
+          base + Math.floor((Date.now() - startedAt) / 1000)
+        );
+        simpleBaseRef.current = currentElapsed;
+        simpleStartedAtRef.current = null;
+        setSimpleSeconds(currentElapsed);
+        setSimpleRunning(false);
+        return false;
+      }
 
-    return true;
+      return true;
+    } finally {
+      simpleStartInFlightRef.current = false;
+    }
   }, [simpleSeconds, startActiveSimpleStudy]);
 
   const pauseSimpleTimer = useCallback(() => {
@@ -1017,7 +1027,7 @@ export function TimerProvider({ children }) {
           // briefly offline, etc). Trust what we already
           // restored locally and try to register it with
           // the server in the background.
-          if (simpleRunningRef.current) {
+          if (simpleRunningRef.current && !simpleStartInFlightRef.current) {
             const retry = await startActiveSimpleStudy();
             if (!retry.ok) setSimpleRunning(false);
           } else if (
@@ -1028,6 +1038,13 @@ export function TimerProvider({ children }) {
             if (!retry.ok) setPomodoroRunning(false);
           }
 
+          return;
+        }
+
+        // A manual Start click may have registered locally while this
+        // initial GET was in flight. Let that registration finish rather
+        // than overwriting/stopping the freshly started timer.
+        if (simpleStartInFlightRef.current) {
           return;
         }
 
@@ -1110,7 +1127,7 @@ export function TimerProvider({ children }) {
         // restored a running timer purely from local
         // storage, recreate it server-side now so it
         // isn't lost on the next refresh.
-        if (simpleRunningRef.current) {
+        if (simpleRunningRef.current && !simpleStartInFlightRef.current) {
           const retry = await startActiveSimpleStudy();
           if (!retry.ok) setSimpleRunning(false);
         } else if (
