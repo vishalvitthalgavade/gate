@@ -1,0 +1,327 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =========================================================
+   GATE CSE — Premium UI foundation
+   Presentation-only layer: no application logic lives here.
+   ========================================================= */
+
+:root {
+  --gate-bg: #f6f7fb;
+  --gate-surface: rgba(255,255,255,.88);
+  --gate-surface-solid: #ffffff;
+  --gate-border: rgba(15,23,42,.09);
+  --gate-text: #111827;
+  --gate-muted: #667085;
+  --gate-accent: #7c3aed;
+  --gate-accent-strong: #6d28d9;
+  --gate-accent-soft: rgba(124,58,237,.10);
+  --gate-shadow: 0 18px 50px rgba(15,23,42,.08);
+  --gate-shadow-sm: 0 8px 24px rgba(15,23,42,.06);
+  --gate-radius: 18px;
+  color-scheme: light;
+}
+
+html.dark {
+  --gate-bg: #090d16;
+  --gate-surface: rgba(17,24,39,.82);
+  --gate-surface-solid: #111827;
+  --gate-border: rgba(255,255,255,.075);
+  --gate-text: #f8fafc;
+  --gate-muted: #94a3b8;
+  --gate-accent: #8b5cf6;
+  --gate-accent-strong: #7c3aed;
+  --gate-accent-soft: rgba(139,92,246,.12);
+  --gate-shadow: 0 24px 60px rgba(0,0,0,.28);
+  --gate-shadow-sm: 0 10px 30px rgba(0,0,0,.20);
+  color-scheme: dark;
+}
+
+html, body, #root {
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--gate-bg);
+}
+
+body {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(124,58,237,.08), transparent 30%),
+    radial-gradient(circle at 92% 0%, rgba(59,130,246,.055), transparent 26%),
+    var(--gate-bg);
+  color: var(--gate-text);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color .25s ease, color .25s ease;
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at 12% -10%, rgba(124,58,237,.13), transparent 34%),
+    radial-gradient(circle at 92% 0%, rgba(37,99,235,.08), transparent 30%),
+    var(--gate-bg);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+button, input, select, textarea { font: inherit; }
+
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a {
+  transition:
+    transform .18s ease,
+    background-color .18s ease,
+    border-color .18s ease,
+    color .18s ease,
+    box-shadow .18s ease,
+    opacity .18s ease;
+}
+
+button:active:not(:disabled) { transform: translateY(1px); }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(139,92,246,.35) !important;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(124,58,237,.24);
+  color: inherit;
+}
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(100,116,139,.32);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgba(100,116,139,.5); }
+
+/* Application shell */
+.gate-app-shell {
+  min-height: 100vh;
+  background: transparent !important;
+}
+
+.gate-main-content {
+  min-height: calc(100vh - 64px);
+  position: relative;
+}
+
+/* Subtle entrance animation for page content without touching page logic. */
+.gate-page-enter {
+  animation: gate-page-enter .32s cubic-bezier(.22,1,.36,1) both;
+}
+
+@keyframes gate-page-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Common content surfaces. Existing page structure/classes remain unchanged. */
+main .rounded-2xl.border,
+main .rounded-xl.border {
+  border-color: var(--gate-border);
+  box-shadow: var(--gate-shadow-sm);
+}
+
+main .rounded-2xl.border {
+  border-radius: var(--gate-radius);
+}
+
+main .rounded-xl.border {
+  border-radius: 15px;
+}
+
+/* Make existing white/zinc cards feel like one coherent product. */
+main .bg-white {
+  background: var(--gate-surface-solid);
+}
+html.dark main .dark\:bg-zinc-900,
+html.dark main .dark\:bg-zinc-950 {
+  background: rgba(15,23,42,.78);
+}
+
+/* Existing purple primary actions. */
+main button.bg-purple-600,
+main a.bg-purple-600 {
+  background: linear-gradient(135deg, var(--gate-accent), var(--gate-accent-strong));
+  box-shadow: 0 8px 20px rgba(124,58,237,.18);
+}
+main button.bg-purple-600:hover,
+main a.bg-purple-600:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 11px 25px rgba(124,58,237,.25);
+}
+
+/* Inputs: stronger hierarchy and cleaner focus. */
+main input:not([type="checkbox"]):not([type="radio"]),
+main select,
+main textarea {
+  border-color: var(--gate-border);
+  border-radius: 13px;
+  min-height: 44px;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+main input:not([type="checkbox"]):not([type="radio"]):focus,
+main select:focus,
+main textarea:focus {
+  border-color: rgba(124,58,237,.62) !important;
+  box-shadow: 0 0 0 4px rgba(124,58,237,.10);
+}
+
+/* Keep checkboxes/radios compact. */
+main input[type="checkbox"],
+main input[type="radio"] { accent-color: var(--gate-accent); }
+
+/* Auth screens */
+.gate-auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(124,58,237,.18), transparent 42%),
+    var(--gate-bg);
+}
+
+.gate-auth-card {
+  width: min(100%, 440px);
+  border: 1px solid var(--gate-border) !important;
+  border-radius: 24px !important;
+  background: var(--gate-surface) !important;
+  box-shadow: var(--gate-shadow) !important;
+  backdrop-filter: blur(18px);
+}
+
+.gate-brand-mark {
+  box-shadow: 0 12px 30px rgba(124,58,237,.24);
+}
+
+/* Mobile header */
+.gate-mobile-header {
+  background: rgba(9,13,22,.78) !important;
+  border-color: var(--gate-border) !important;
+  backdrop-filter: blur(18px);
+}
+html:not(.dark) .gate-mobile-header {
+  background: rgba(255,255,255,.82) !important;
+}
+
+/* Reduce accidental layout jumps in images. */
+img { max-width: 100%; }
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .gate-main-content { min-height: calc(100vh - 60px); }
+}
+
+
+/* Navigation / sidebar */
+.gate-sidebar {
+  width: 272px !important;
+  border-right-color: var(--gate-border) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.94)) !important;
+  box-shadow: 10px 0 40px rgba(15,23,42,.025);
+}
+html.dark .gate-sidebar {
+  background:
+    linear-gradient(180deg, rgba(9,13,22,.98), rgba(13,18,30,.97)) !important;
+  box-shadow: 12px 0 50px rgba(0,0,0,.16);
+}
+.gate-sidebar nav a {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: 13px !important;
+  padding: 11px 13px !important;
+}
+.gate-sidebar nav a:hover:not(.active) {
+  border-color: var(--gate-border);
+  transform: translateX(2px);
+}
+.gate-sidebar nav a.bg-purple-600 {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  box-shadow: 0 8px 20px rgba(124,58,237,.18);
+}
+.gate-sidebar button {
+  border-radius: 13px;
+}
+.gate-sidebar > div:first-child {
+  background: linear-gradient(180deg, rgba(124,58,237,.025), transparent);
+}
+@media (max-width: 767px) {
+  .gate-sidebar { width: min(86vw, 300px) !important; }
+}
+
+
+/* Typography hierarchy */
+main h1 {
+  letter-spacing: -.025em;
+}
+main h2 {
+  letter-spacing: -.018em;
+}
+main h1, main h2, main h3 {
+  text-wrap: balance;
+}
+
+/* Common list/table polish without changing data rendering. */
+main table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+main th {
+  font-size: .72rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+main tr {
+  transition: background-color .16s ease;
+}
+main tbody tr:hover {
+  background: rgba(124,58,237,.035);
+}
+html.dark main tbody tr:hover {
+  background: rgba(139,92,246,.045);
+}
+
+/* Softer default dividers. */
+main .border-gray-200,
+main .border-zinc-800,
+main .border-zinc-700 {
+  border-color: var(--gate-border);
+}
+
+/* Give the first-level page content a little depth while retaining existing layouts. */
+@media (min-width: 768px) {
+  main .max-w-7xl > * {
+    max-width: 100%;
+  }
+}
