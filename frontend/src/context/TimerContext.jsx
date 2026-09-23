@@ -569,7 +569,25 @@ export function TimerProvider({ children }) {
     setSimpleRunning(true);
 
     try {
-      const result = await startActiveSimpleStudy();
+      let result = await startActiveSimpleStudy();
+
+      /*
+       * The very first request right after opening the app (waking a
+       * sleepy connection, a token that just needed a silent refresh,
+       * a brief network hiccup) is the one most likely to fail once.
+       * A genuine conflict (409, someone/something else already owns
+       * the timer) won't succeed on a second try, so only retry other,
+       * transient failures - and only once - before rolling the
+       * optimistic UI back. This avoids the timer flicking on and
+       * immediately back off on that first attempt.
+       */
+      if (!result.ok && result.status !== 409) {
+        await new Promise((resolve) => window.setTimeout(resolve, 800));
+        if (simpleRunningRef.current) {
+          result = await startActiveSimpleStudy();
+        }
+      }
+
       if (!result.ok) {
         const currentElapsed = Math.max(
           0,
