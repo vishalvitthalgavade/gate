@@ -441,6 +441,13 @@ export function TimerProvider({ children }) {
   }, [activeStudyRequest, getPomodoroElapsedSeconds]);
 
   const heartbeatActiveStudy = useCallback(async () => {
+    // Do not heartbeat before the initial Start request has registered the timer.
+    // Otherwise a slow first request can race the heartbeat and make a newly
+    // started timer look missing/unauthorized, causing it to stop immediately.
+    if (simpleStartInFlightRef.current) {
+      return;
+    }
+
     if (simpleRunningRef.current) {
       const result = await activeStudyRequest(
         "/sessions/active/heartbeat",
