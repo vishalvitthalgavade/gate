@@ -423,6 +423,8 @@ function Timer() {
         <div
           ref={timerCardRef}
           className={`relative rounded-2xl border border-slate-200 bg-white shadow-2xl transition-all duration-300 dark:border-zinc-800 dark:bg-zinc-900/50 ${
+            isRunning ? "gate-timer-card-live" : ""
+          } ${
             isFullscreen
               ? "flex min-h-screen w-full items-center justify-center overflow-auto rounded-none border-0 bg-slate-50 p-4 dark:bg-[#0b1120] sm:p-8"
               : "p-5 sm:p-8"
@@ -461,7 +463,9 @@ function Timer() {
                 </p>
 
                 <div
-                  className={`break-all font-bold tabular-nums text-slate-900 dark:text-white ${
+                  className={`break-all font-bold tabular-nums text-slate-900 dark:text-white gate-timer-digits ${
+                    simpleRunning ? "gate-timer-live" : ""
+                  } ${
                     isFullscreen
                       ? "text-6xl sm:text-8xl md:text-9xl"
                       : "text-4xl sm:text-7xl"
@@ -535,7 +539,9 @@ function Timer() {
                 </div>
 
                 <div
-                  className={`font-bold tabular-nums text-slate-900 dark:text-white ${
+                  className={`font-bold tabular-nums text-slate-900 dark:text-white gate-timer-digits ${
+                    pomodoroRunning ? "gate-timer-live" : ""
+                  } ${
                     isFullscreen
                       ? "text-8xl sm:text-9xl md:text-[11rem]"
                       : "text-6xl sm:text-8xl"

@@ -468,11 +468,7 @@ function Leaderboard() {
                 (item) => (
                   <div
                     key={item}
-                    className={`h-16 animate-pulse rounded-xl ${
-                      isDark
-                        ? "bg-zinc-800"
-                        : "bg-slate-100"
-                    }`}
+                    className="gate-skeleton h-16 rounded-xl"
                   />
                 )
               )}

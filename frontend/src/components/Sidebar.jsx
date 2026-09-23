@@ -324,31 +324,39 @@ function Sidebar({ isOpen, setIsOpen }) {
         {isRunning && (
           <div className="px-4 pt-3">
             <div
-              className={`rounded-xl border px-3 py-3 ${
+              className={`gate-timer-card-live rounded-xl border px-3 py-3 ${
                 theme === "dark"
                   ? "border-purple-500/20 bg-purple-500/10"
                   : "border-purple-200 bg-purple-50"
               }`}
             >
               <p
-                className={`text-[10px] font-semibold uppercase tracking-wider ${
+                className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider ${
                   theme === "dark"
                     ? "text-purple-300"
                     : "text-purple-700"
                 }`}
               >
+                <span className="gate-live-dot" aria-hidden="true" />
                 {timerMode === "pomodoro" ? "Pomodoro" : "Study timer"}
               </p>
               <p
-                className={`mt-1 font-mono text-xl font-bold tabular-nums ${
+                className={`mt-1 font-mono text-xl font-bold tabular-nums gate-timer-digits gate-timer-live ${
                   theme === "dark" ? "text-white" : "text-gray-900"
                 }`}
               >
-                {formatSidebarTime(
-                  timerMode === "pomodoro"
-                    ? pomodoroSeconds
-                    : simpleSeconds
-                )}
+                <span
+                  key={
+                    timerMode === "pomodoro" ? pomodoroSeconds : simpleSeconds
+                  }
+                  className="gate-timer-tick"
+                >
+                  {formatSidebarTime(
+                    timerMode === "pomodoro"
+                      ? pomodoroSeconds
+                      : simpleSeconds
+                  )}
+                </span>
               </p>
               <div className="mt-2 flex gap-2">
                 <button
@@ -364,17 +372,17 @@ function Sidebar({ isOpen, setIsOpen }) {
                       startSimpleTimer();
                     }
                   }}
-                  className="rounded-lg bg-purple-600 px-2.5 py-1 text-xs font-semibold text-white"
+                  className="rounded-lg bg-purple-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-purple-500 active:scale-[0.97]"
                 >
                   {simpleRunning || pomodoroRunning ? "Pause" : "Start"}
                 </button>
                 <NavLink
                   to="/timer"
                   onClick={() => setIsOpen(false)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition active:scale-[0.97] ${
                     theme === "dark"
-                      ? "bg-zinc-900 text-zinc-200"
-                      : "bg-white text-gray-700"
+                      ? "bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+                      : "bg-white text-gray-700 hover:bg-slate-100"
                   }`}
                 >
                   Open

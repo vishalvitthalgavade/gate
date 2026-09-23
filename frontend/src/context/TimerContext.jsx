@@ -441,6 +441,14 @@ export function TimerProvider({ children }) {
   }, [activeStudyRequest, getPomodoroElapsedSeconds]);
 
   const heartbeatActiveStudy = useCallback(async () => {
+    // Do not let the heartbeat race the initial Start request.
+    // The timer is already running locally, but the server session may
+    // still be in the process of being created. A premature heartbeat
+    // can receive 404/ownership errors and stop the timer on the first click.
+    if (simpleStartInFlightRef.current) {
+      return;
+    }
+
     if (simpleRunningRef.current) {
       const result = await activeStudyRequest(
         "/sessions/active/heartbeat",

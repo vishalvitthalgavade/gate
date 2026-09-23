@@ -429,18 +429,19 @@ export default function Heatmap() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-
-        <div className="text-center">
-
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-green-500 dark:border-zinc-700 dark:border-t-green-500" />
-
-          <p className="text-sm text-gray-500 dark:text-zinc-400">
-            Loading heatmap...
-          </p>
-
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-6 space-y-2">
+          <div className="gate-skeleton h-7 w-48 rounded-lg" />
+          <div className="gate-skeleton h-4 w-72 rounded-lg" />
         </div>
-
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-6">
+          <div className="gate-skeleton mb-5 h-5 w-40 rounded-lg" />
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+            {Array.from({ length: 91 }).map((_, i) => (
+              <div key={i} className="gate-skeleton aspect-square rounded-[4px]" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

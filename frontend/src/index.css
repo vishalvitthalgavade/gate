@@ -88,7 +88,7 @@ button, a {
     opacity .18s ease;
 }
 
-button:active:not(:disabled) { transform: translateY(1px); }
+button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
 
 button:focus-visible,
 a:focus-visible,
@@ -825,5 +825,99 @@ html.dark .gate-skeleton::after {
   }
   .gate-sidebar nav a.bg-purple-600::after {
     display: none;
+  }
+}
+
+/* =========================================================
+   GATE CSE — micro-interactions: timer, live indicators,
+   skeleton loading
+   ========================================================= */
+
+/* Big timer digits: a calm breathing glow while a session is
+   actively running, plus a quick "tick" pop whenever the
+   displayed value changes (triggered by remounting via key). */
+.gate-timer-digits {
+  display: inline-block;
+  transition: text-shadow .3s ease;
+}
+
+.gate-timer-digits.gate-timer-live {
+  text-shadow: 0 0 26px rgba(139,92,246,.38);
+  animation: gate-timer-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes gate-timer-breathe {
+  0%, 100% { text-shadow: 0 0 18px rgba(139,92,246,.28); }
+  50% { text-shadow: 0 0 34px rgba(139,92,246,.48); }
+}
+
+.gate-timer-tick {
+  display: inline-block;
+  animation: gate-timer-tick .32s cubic-bezier(.22,1,.36,1) both;
+}
+
+@keyframes gate-timer-tick {
+  from { opacity: .55; transform: translateY(2px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* The card that hosts the timer glows softly at its edges while running. */
+.gate-timer-card-live {
+  position: relative;
+}
+.gate-timer-card-live::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(139,92,246,.16), 0 0 46px rgba(139,92,246,.14);
+  animation: gate-card-glow 2.4s ease-in-out infinite;
+}
+@keyframes gate-card-glow {
+  0%, 100% { opacity: .65; }
+  50% { opacity: 1; }
+}
+
+/* Small "live" status dot used next to running-timer labels. */
+.gate-live-dot {
+  position: relative;
+  display: inline-flex;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--gate-accent);
+  flex: 0 0 auto;
+}
+.gate-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 999px;
+  background: var(--gate-accent);
+  opacity: .45;
+  animation: gate-live-ping 1.8s cubic-bezier(0,0,.2,1) infinite;
+}
+@keyframes gate-live-ping {
+  0% { transform: scale(.6); opacity: .55; }
+  75%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* Skeleton rows: same shimmer as .gate-skeleton, sized as list rows. */
+.gate-skeleton-row {
+  height: 16px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-timer-digits.gate-timer-live,
+  .gate-timer-tick,
+  .gate-timer-card-live::before,
+  .gate-live-dot::after {
+    animation: none !important;
+  }
+  .gate-timer-digits.gate-timer-live {
+    text-shadow: 0 0 20px rgba(139,92,246,.32);
   }
 }
