@@ -921,3 +921,40 @@ html.dark .gate-skeleton::after {
     text-shadow: 0 0 20px rgba(139,92,246,.32);
   }
 }
+
+
+
+/* Strong Zen Mode blur: intentionally obscures the timer digits while keeping the timer running normally. */
+.gate-zen-blur {
+  filter: blur(28px);
+  opacity: .42;
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .gate-zen-blur {
+    filter: blur(34px);
+    opacity: .32;
+  }
+}
+
+/* Timer landscape support: follows the device/browser orientation when
+   mobile auto-rotate is enabled. No manual rotation state is required. */
+@media (max-width: 767px) and (orientation: landscape) {
+  .timer-landscape-content {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .timer-landscape-content .gate-timer-digits {
+    font-size: clamp(3.5rem, 18vw, 8rem);
+    line-height: 1;
+  }
+
+  .timer-landscape-content .timer-action-row {
+    margin-top: 1rem;
+  }
+}

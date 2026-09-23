@@ -74,6 +74,7 @@ function Timer() {
   const isDark = theme === "dark";
   const [showSettings, setShowSettings] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [zenMode, setZenMode] = useState(false);
   const timerCardRef = useRef(null);
   const wakeLockRef = useRef(null);
   const [takeoverMinutes, setTakeoverMinutes] = useState("");
@@ -426,28 +427,45 @@ function Timer() {
             isRunning ? "gate-timer-card-live" : ""
           } ${
             isFullscreen
-              ? "flex min-h-screen w-full items-center justify-center overflow-auto rounded-none border-0 bg-slate-50 p-4 dark:bg-[#0b1120] sm:p-8"
+              ? "flex min-h-screen w-full items-center justify-center overflow-auto rounded-none border-0 bg-black p-4 text-white sm:p-8"
               : "p-5 sm:p-8"
           }`}
         >
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            title={isFullscreen ? "Exit fullscreen" : "Fullscreen timer"}
-            className="absolute right-4 top-4 z-20 flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-600 backdrop-blur transition hover:border-purple-500/50 hover:bg-slate-200 hover:text-slate-900 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-400 dark:hover:text-white"
+          <div className="absolute inset-x-3 top-3 z-20 flex flex-wrap items-center justify-end gap-2 sm:inset-x-4 sm:top-4">
+            <button
+              type="button"
+              onClick={() => setZenMode((value) => !value)}
+              aria-pressed={zenMode}
+              title={zenMode ? "Show timer" : "Zen mode — blur timer"}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold backdrop-blur transition hover:border-purple-500/50 ${
+                zenMode
+                  ? "border-purple-500/60 bg-purple-600/15 text-purple-300"
+                  : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-400 dark:hover:text-white"
+              }`}
+            >
+              <span className="hidden sm:inline">{zenMode ? "Zen On" : "Zen Mode"}</span>
+              <span className="sm:hidden">Zen</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen timer"}
+            className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-600 backdrop-blur transition hover:border-purple-500/50 hover:bg-slate-200 hover:text-slate-900 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-400 dark:hover:text-white"
           >
-            {isFullscreen ? (
-              <>
-                <Minimize size={17} />
-                <span className="hidden sm:inline">Exit Fullscreen</span>
-              </>
-            ) : (
-              <>
-                <Maximize size={17} />
-                <span className="hidden sm:inline">Fullscreen</span>
-              </>
-            )}
-          </button>
+              {isFullscreen ? (
+                <>
+                  <Minimize size={17} />
+                  <span className="hidden sm:inline">Exit Fullscreen</span>
+                </>
+              ) : (
+                <>
+                  <Maximize size={17} />
+                  <span className="hidden sm:inline">Fullscreen</span>
+                </>
+              )}
+            </button>
+          </div>
 
           {restoring && (
             <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs text-slate-500 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
@@ -455,21 +473,24 @@ function Timer() {
             </div>
           )}
 
-          <div className={isFullscreen ? "w-full max-w-5xl" : "w-full"}>
+          <div className={`w-full ${isFullscreen ? "max-w-5xl" : ""} timer-landscape-content`}>
             {timerMode === "simple" && (
-              <div className="text-center">
+              <div className="w-full pt-12 text-center sm:pt-10">
                 <p className="mb-3 text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500 sm:mb-4 sm:text-sm sm:tracking-widest">
                   Regular Study Timer
                 </p>
 
                 <div
-                  className={`break-all font-bold tabular-nums text-slate-900 dark:text-white gate-timer-digits ${
+                  className={`break-all font-bold tabular-nums text-slate-900 dark:text-white gate-timer-digits transition-all duration-300 ${
                     simpleRunning ? "gate-timer-live" : ""
                   } ${
+                    zenMode ? "gate-zen-blur select-none" : ""
+                  } ${
                     isFullscreen
-                      ? "text-6xl sm:text-8xl md:text-9xl"
+                      ? "text-7xl sm:text-9xl md:text-[12rem]"
                       : "text-4xl sm:text-7xl"
                   }`}
+                  aria-label={zenMode ? "Timer hidden in Zen mode" : `Elapsed time ${formatTime(simpleSeconds)}`}
                 >
                   {formatTime(simpleSeconds)}
                 </div>
@@ -482,7 +503,7 @@ function Timer() {
                     : "No subject selected"}
                 </p>
 
-                <div className="mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:flex sm:justify-center sm:gap-3">
+                <div className="timer-action-row mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:flex sm:justify-center sm:gap-3">
                   {!simpleRunning ? (
                     <button
                       type="button"
@@ -527,7 +548,7 @@ function Timer() {
             )}
 
             {timerMode === "pomodoro" && (
-              <div className="text-center">
+              <div className="w-full pt-12 text-center sm:pt-10">
                 <div className="mb-4 flex items-center justify-center gap-2">
                   <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-400">
                     {pomodoroMode === "study"
@@ -539,13 +560,16 @@ function Timer() {
                 </div>
 
                 <div
-                  className={`font-bold tabular-nums text-slate-900 dark:text-white gate-timer-digits ${
+                  className={`font-bold tabular-nums text-slate-900 dark:text-white gate-timer-digits transition-all duration-300 ${
                     pomodoroRunning ? "gate-timer-live" : ""
                   } ${
+                    zenMode ? "gate-zen-blur select-none" : ""
+                  } ${
                     isFullscreen
-                      ? "text-8xl sm:text-9xl md:text-[11rem]"
+                      ? "text-8xl sm:text-9xl md:text-[13rem]"
                       : "text-6xl sm:text-8xl"
                   }`}
+                  aria-label={zenMode ? "Timer hidden in Zen mode" : `Remaining time ${formatShortTime(pomodoroSeconds)}`}
                 >
                   {formatShortTime(pomodoroSeconds)}
                 </div>
@@ -554,7 +578,7 @@ function Timer() {
                   Completed: {completedPomodoros} pomodoros
                 </p>
 
-                <div className="mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:flex sm:justify-center sm:gap-3">
+                <div className="timer-action-row mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:flex sm:justify-center sm:gap-3">
                   {!pomodoroRunning ? (
                     <button
                       type="button"
