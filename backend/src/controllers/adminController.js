@@ -863,6 +863,143 @@ async function getLoginAttempts(req, res) {
   }
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| Delete Login Attempt
+|--------------------------------------------------------------------------
+*/
+
+async function deleteLoginAttempt(req, res) {
+  try {
+    const { attemptId } = req.params;
+
+    const result = await prisma.loginAttempt.deleteMany({
+      where: { id: attemptId },
+    });
+
+    if (!result.count) {
+      return res.status(404).json({
+        success: false,
+        message: "Login attempt not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Login attempt deleted.",
+    });
+  } catch (error) {
+    console.error("Delete login attempt error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete login attempt.",
+    });
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Clear Login Attempts
+|--------------------------------------------------------------------------
+*/
+
+async function clearLoginAttempts(req, res) {
+  try {
+    const result = await prisma.loginAttempt.deleteMany({});
+
+    return res.json({
+      success: true,
+      message: result.count
+        ? `Cleared ${result.count} login attempts.`
+        : "No login attempts to clear.",
+      deletedCount: result.count,
+    });
+  } catch (error) {
+    console.error("Clear login attempts error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to clear login attempts.",
+    });
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Revoke Single Active Session
+|--------------------------------------------------------------------------
+*/
+
+async function revokeActiveSession(req, res) {
+  try {
+    const { sessionId } = req.params;
+
+    const result = await prisma.authSession.updateMany({
+      where: {
+        id: sessionId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    if (!result.count) {
+      return res.status(404).json({
+        success: false,
+        message: "Active session not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Session revoked.",
+    });
+  } catch (error) {
+    console.error("Revoke active session error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to revoke session.",
+    });
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Revoke All Active Sessions
+|--------------------------------------------------------------------------
+*/
+
+async function revokeAllActiveSessions(req, res) {
+  try {
+    const result = await prisma.authSession.updateMany({
+      where: {
+        revokedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: result.count
+        ? `Revoked ${result.count} active sessions.`
+        : "No active sessions to revoke.",
+      revokedCount: result.count,
+    });
+  } catch (error) {
+    console.error("Revoke all active sessions error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to revoke active sessions.",
+    });
+  }
+}
+
 /*
 |--------------------------------------------------------------------------
 | Active Sessions
@@ -970,5 +1107,9 @@ module.exports = {
   deleteUserStudyHistory,
   clearUserActiveTimer,
   getLoginAttempts,
+  deleteLoginAttempt,
+  clearLoginAttempts,
   getActiveSessions,
+  revokeActiveSession,
+  revokeAllActiveSessions,
 };

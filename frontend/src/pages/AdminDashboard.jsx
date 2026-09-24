@@ -243,8 +243,153 @@ export default function AdminDashboard() {
     }
   };
 
+
+  const handleDeleteLoginAttempt = async (attempt) => {
+    const confirmed = await requestConfirmation({
+      title: "Delete login attempt",
+      message: `Delete the login attempt for ${attempt.email}? This action cannot be undone.`,
+      confirmText: "Delete Attempt",
+      danger: true,
+    });
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setError("");
+
+    try {
+      const response = await adminFetch(
+        `/admin/login-attempts/${attempt.id}`,
+        { method: "DELETE" }
+      );
+
+      if (handleAuthError(response)) return;
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to delete login attempt.");
+      }
+
+      setLoginAttempts((current) =>
+        current.filter((item) => item.id !== attempt.id)
+      );
+      showMessage("Login attempt deleted.");
+    } catch (err) {
+      setError(err.message || "Unable to delete login attempt.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleClearLoginAttempts = async () => {
+    const confirmed = await requestConfirmation({
+      title: "Clear all login attempts",
+      message: "Delete all recorded login attempts? This action cannot be undone.",
+      confirmText: "Clear All",
+      danger: true,
+    });
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setError("");
+
+    try {
+      const response = await adminFetch("/admin/login-attempts", {
+        method: "DELETE",
+      });
+
+      if (handleAuthError(response)) return;
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to clear login attempts.");
+      }
+
+      setLoginAttempts([]);
+      showMessage(data.message || "All login attempts cleared.");
+    } catch (err) {
+      setError(err.message || "Unable to clear login attempts.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRevokeActiveSession = async (session) => {
+    const name = session.user?.name || session.user?.email || "this user";
+    const confirmed = await requestConfirmation({
+      title: "Revoke session",
+      message: `Revoke the active session for ${name}?`,
+      confirmText: "Revoke Session",
+      danger: true,
+    });
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setError("");
+
+    try {
+      const response = await adminFetch(
+        `/admin/sessions/${session.id}`,
+        { method: "DELETE" }
+      );
+
+      if (handleAuthError(response)) return;
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to revoke session.");
+      }
+
+      setSessions((current) =>
+        current.filter((item) => item.id !== session.id)
+      );
+      showMessage("Session revoked.");
+    } catch (err) {
+      setError(err.message || "Unable to revoke session.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRevokeAllActiveSessions = async () => {
+    const confirmed = await requestConfirmation({
+      title: "Revoke all active sessions",
+      message: "Revoke every currently active authentication session? Users will need to sign in again.",
+      confirmText: "Revoke All",
+      danger: true,
+    });
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setError("");
+
+    try {
+      const response = await adminFetch("/admin/sessions", {
+        method: "DELETE",
+      });
+
+      if (handleAuthError(response)) return;
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to revoke active sessions.");
+      }
+
+      setSessions([]);
+      showMessage(data.message || "All active sessions revoked.");
+    } catch (err) {
+      setError(err.message || "Unable to revoke active sessions.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadDashboard();
+    loadLoginAttempts();
   }, []);
 
   useEffect(() => {
@@ -810,6 +955,7 @@ export default function AdminDashboard() {
       id: "login-attempts",
       label: "Login Attempts",
       icon: Shield,
+      count: loginAttempts.length,
     },
     {
       id: "sessions",
@@ -1676,17 +1822,23 @@ export default function AdminDashboard() {
                   description="Review successful and failed authentication activity."
                   icon={Shield}
                   action={
-                    <button
-                      onClick={
-                        loadLoginAttempts
-                      }
-                      className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-purple-500/30 hover:text-white"
-                    >
-                      <RefreshCw
-                        size={15}
-                      />
-                      Refresh
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={loadLoginAttempts}
+                        className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-purple-500/30 hover:text-white"
+                      >
+                        <RefreshCw size={15} />
+                        Refresh
+                      </button>
+                      <button
+                        onClick={handleClearLoginAttempts}
+                        disabled={actionLoading || loginAttempts.length === 0}
+                        className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Trash2 size={15} />
+                        Clear All
+                      </button>
+                    </div>
                   }
                 />
 
@@ -1747,6 +1899,10 @@ export default function AdminDashboard() {
                           <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-600">
                             Time
                           </th>
+
+                          <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-wider text-zinc-600">
+                            Action
+                          </th>
                         </tr>
                       </thead>
 
@@ -1754,7 +1910,7 @@ export default function AdminDashboard() {
                         {loginAttempts.length ===
                         0 ? (
                           <EmptyTableRow
-                            colSpan="4"
+                            colSpan="5"
                             icon={Shield}
                             message="No login attempts found."
                           />
@@ -1825,6 +1981,17 @@ export default function AdminDashboard() {
                                     )}
                                   </p>
                                 </td>
+
+                                <td className="px-5 py-4 text-right">
+                                  <button
+                                    onClick={() => handleDeleteLoginAttempt(attempt)}
+                                    disabled={actionLoading}
+                                    aria-label={`Delete login attempt for ${attempt.email}`}
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/70 text-zinc-500 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </td>
                               </tr>
                             )
                           )
@@ -1846,15 +2013,23 @@ export default function AdminDashboard() {
                   description="Monitor currently active authenticated sessions."
                   icon={Activity}
                   action={
-                    <button
-                      onClick={loadSessions}
-                      className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-purple-500/30 hover:text-white"
-                    >
-                      <RefreshCw
-                        size={15}
-                      />
-                      Refresh
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={loadSessions}
+                        className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-purple-500/30 hover:text-white"
+                      >
+                        <RefreshCw size={15} />
+                        Refresh
+                      </button>
+                      <button
+                        onClick={handleRevokeAllActiveSessions}
+                        disabled={actionLoading || sessions.length === 0}
+                        className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Trash2 size={15} />
+                        Clear All
+                      </button>
+                    </div>
                   }
                 />
 
@@ -1905,6 +2080,10 @@ export default function AdminDashboard() {
                           <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-600">
                             Status
                           </th>
+
+                          <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-wider text-zinc-600">
+                            Action
+                          </th>
                         </tr>
                       </thead>
 
@@ -1912,7 +2091,7 @@ export default function AdminDashboard() {
                         {sessions.length ===
                         0 ? (
                           <EmptyTableRow
-                            colSpan="4"
+                            colSpan="5"
                             icon={Activity}
                             message="No active sessions found."
                           />
@@ -1975,6 +2154,17 @@ export default function AdminDashboard() {
                                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                                     Active
                                   </span>
+                                </td>
+
+                                <td className="px-5 py-4 text-right">
+                                  <button
+                                    onClick={() => handleRevokeActiveSession(session)}
+                                    disabled={actionLoading}
+                                    aria-label={`Revoke session for ${session.user?.name || session.user?.email || "user"}`}
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/70 text-zinc-500 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
                                 </td>
                               </tr>
                             )

@@ -15,7 +15,11 @@ const {
   deleteUserStudyHistory,
   clearUserActiveTimer,
   getLoginAttempts,
+  deleteLoginAttempt,
+  clearLoginAttempts,
   getActiveSessions,
+  revokeActiveSession,
+  revokeAllActiveSessions,
 } = require("../controllers/adminController");
 
 const router = express.Router();
@@ -104,8 +108,12 @@ router.post(
 
 // Login attempts
 router.get("/login-attempts", getLoginAttempts);
+router.delete("/login-attempts", clearLoginAttempts);
+router.delete("/login-attempts/:attemptId", deleteLoginAttempt);
 
 // Currently active authentication sessions
 router.get("/sessions", getActiveSessions);
+router.delete("/sessions", revokeAllActiveSessions);
+router.delete("/sessions/:sessionId", revokeActiveSession);
 
 module.exports = router;
