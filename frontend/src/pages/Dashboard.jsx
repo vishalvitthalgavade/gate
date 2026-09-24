@@ -1,3 +1,5 @@
+import CustomSelect from "../components/CustomSelect";
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -619,26 +621,26 @@ function Dashboard() {
               <p className="mt-1 text-sm text-gray-500 dark:text-zinc-500">Goals are stored locally as your personal preference; progress uses saved study sessions.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <select
-                aria-label="Daily study goal"
+              <CustomSelect
+                ariaLabel="Daily study goal"
                 value={goals.daily}
-                onChange={(event) => setGoals((current) => ({ ...current, daily: Number(event.target.value) }))}
-                className="min-h-10 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-800 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
-              >
-                {[30, 60, 90, 120, 180, 240].map((minutes) => (
-                  <option key={minutes} value={minutes * 60}>{minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`} daily</option>
-                ))}
-              </select>
-              <select
-                aria-label="Weekly study goal"
+                onChange={(value) => setGoals((current) => ({ ...current, daily: Number(value) }))}
+                options={[30, 60, 90, 120, 180, 240].map((minutes) => ({
+                  value: minutes * 60,
+                  label: `${minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`} daily`,
+                }))}
+                className="w-full sm:w-auto sm:min-w-[130px]"
+              />
+              <CustomSelect
+                ariaLabel="Weekly study goal"
                 value={goals.weekly}
-                onChange={(event) => setGoals((current) => ({ ...current, weekly: Number(event.target.value) }))}
-                className="min-h-10 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-800 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
-              >
-                {[7, 10, 14, 18, 21, 28].map((hours) => (
-                  <option key={hours} value={hours * 60 * 60}>{hours}h weekly</option>
-                ))}
-              </select>
+                onChange={(value) => setGoals((current) => ({ ...current, weekly: Number(value) }))}
+                options={[7, 10, 14, 18, 21, 28].map((hours) => ({
+                  value: hours * 60 * 60,
+                  label: `${hours}h weekly`,
+                }))}
+                className="w-full sm:w-auto sm:min-w-[130px]"
+              />
             </div>
           </div>
 

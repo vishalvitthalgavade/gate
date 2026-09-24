@@ -20,6 +20,8 @@ import { GATE_SYLLABUS } from "../data/syllabus";
 import { useStudy } from "../context/useStudy";
 import { useTheme } from "../context/ThemeContext";
 import { useTimer } from "../context/TimerContext";
+import CustomSelect from "../components/CustomSelect";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 function formatTime(totalSeconds) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -79,6 +81,7 @@ function Timer() {
   const wakeLockRef = useRef(null);
   const [takeoverMinutes, setTakeoverMinutes] = useState("");
   const [takeoverSubmitting, setTakeoverSubmitting] = useState(false);
+  const [takeoverError, setTakeoverError] = useState("");
 
   const availableTopics = useMemo(() => {
     if (!selectedSubject) {
@@ -108,7 +111,7 @@ function Timer() {
     try {
       const result = await takeOverTimer(studiedSeconds);
       if (!result?.ok) {
-        window.alert(result?.data?.message || "The other timer changed before takeover. Please try again.");
+        setTakeoverError(result?.data?.message || "The other timer changed before takeover. Please try again.");
       }
     } finally {
       setTakeoverSubmitting(false);
@@ -385,39 +388,33 @@ function Timer() {
             <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-zinc-300">
               Subject
             </label>
-            <select
+            <CustomSelect
+              ariaLabel="Subject"
               value={selectedSubject}
-              onChange={(e) => handleSubjectChange(e.target.value)}
-              className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-purple-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
-            >
-              <option value="">Select Subject (optional)</option>
-              {Object.keys(GATE_SYLLABUS).map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
-                </option>
-              ))}
-            </select>
+              onChange={handleSubjectChange}
+              placeholder="Select Subject (optional)"
+              options={[
+                { value: "", label: "Select Subject (optional)" },
+                ...Object.keys(GATE_SYLLABUS).map((subject) => ({ value: subject, label: subject })),
+              ]}
+            />
           </div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-zinc-300">
               Topic
             </label>
-            <select
+            <CustomSelect
+              ariaLabel="Topic"
               value={selectedTopic}
-              onChange={(e) => setSelectedTopic(e.target.value)}
+              onChange={setSelectedTopic}
               disabled={!selectedSubject}
-              className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:opacity-40 focus:border-purple-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
-            >
-              <option value="">
-                {selectedSubject ? "Select Topic" : "Select subject first"}
-              </option>
-              {availableTopics.map((topic) => (
-                <option key={topic} value={topic}>
-                  {topic}
-                </option>
-              ))}
-            </select>
+              placeholder={selectedSubject ? "Select Topic" : "Select subject first"}
+              options={[
+                { value: "", label: selectedSubject ? "Select Topic" : "Select subject first" },
+                ...availableTopics.map((topic) => ({ value: topic, label: topic })),
+              ]}
+            />
           </div>
         </div>
 
@@ -767,6 +764,16 @@ function Timer() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(takeoverError)}
+        title="Timer takeover unavailable"
+        message={takeoverError}
+        confirmText="Got it"
+        cancelText="Close"
+        onConfirm={() => setTakeoverError("")}
+        onCancel={() => setTakeoverError("")}
+      />
     </div>
   );
 }

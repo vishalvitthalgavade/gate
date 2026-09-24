@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -33,6 +33,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAdminAuth } from "../context/AdminAuthContext";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -82,6 +83,22 @@ export default function AdminDashboard() {
 
   const [userMenu, setUserMenu] =
     useState(null);
+
+  const [confirmState, setConfirmState] = useState({ open: false });
+  const confirmResolverRef = useRef(null);
+
+  const requestConfirmation = ({ title, message, confirmText = "Confirm", danger = false }) =>
+    new Promise((resolve) => {
+      confirmResolverRef.current = resolve;
+      setConfirmState({ open: true, title, message, confirmText, danger });
+    });
+
+  const closeConfirmation = (confirmed) => {
+    const resolve = confirmResolverRef.current;
+    confirmResolverRef.current = null;
+    setConfirmState({ open: false });
+    resolve?.(confirmed);
+  };
 
   const showMessage = (text) => {
     setMessage(text);
@@ -289,9 +306,12 @@ export default function AdminDashboard() {
       ? "disable"
       : "enable";
 
-    const confirmed = window.confirm(
-      `Are you sure you want to ${action} ${user.name}?`
-    );
+    const confirmed = await requestConfirmation({
+      title: `${action === "disable" ? "Disable" : "Enable"} user`,
+      message: `Are you sure you want to ${action} ${user.name}?`,
+      confirmText: action === "disable" ? "Disable User" : "Enable User",
+      danger: action === "disable",
+    });
 
     if (!confirmed) {
       return;
@@ -349,9 +369,12 @@ export default function AdminDashboard() {
   };
 
   const handleRevokeSessions = async (user) => {
-    const confirmed = window.confirm(
-      `Revoke all active sessions for ${user.name}?`
-    );
+    const confirmed = await requestConfirmation({
+      title: "Revoke active sessions",
+      message: `Revoke all active sessions for ${user.name}?`,
+      confirmText: "Revoke Sessions",
+      danger: true,
+    });
 
     if (!confirmed) {
       return;
@@ -410,9 +433,11 @@ export default function AdminDashboard() {
   };
 
   const handleResetPassword = async (user) => {
-    const confirmed = window.confirm(
-      `Generate a new temporary password for ${user.name}?`
-    );
+    const confirmed = await requestConfirmation({
+      title: "Generate temporary password",
+      message: `Generate a new temporary password for ${user.name}?`,
+      confirmText: "Generate Password",
+    });
 
     if (!confirmed) {
       return;
@@ -472,7 +497,13 @@ export default function AdminDashboard() {
       return;
     }
     const nextRole = user.role === "ADMIN" ? "USER" : "ADMIN";
-    if (!window.confirm(`Change ${user.name}'s role to ${nextRole}?`)) return;
+    const confirmed = await requestConfirmation({
+      title: "Change user role",
+      message: `Change ${user.name}'s role to ${nextRole}?`,
+      confirmText: `Make ${nextRole}`,
+      danger: nextRole === "USER",
+    });
+    if (!confirmed) return;
     setActionLoading(true);
     setError("");
     try {
@@ -495,7 +526,13 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteStudyHistory = async (user) => {
-    if (!window.confirm(`Delete ALL recorded study history for ${user.name}? This cannot be undone.`)) return;
+    const confirmed = await requestConfirmation({
+      title: "Delete study history",
+      message: `Delete ALL recorded study history for ${user.name}? This cannot be undone.`,
+      confirmText: "Delete History",
+      danger: true,
+    });
+    if (!confirmed) return;
     setActionLoading(true);
     setError("");
     try {
@@ -515,7 +552,13 @@ export default function AdminDashboard() {
   };
 
   const handleClearActiveTimer = async (user) => {
-    if (!window.confirm(`Force-clear ${user.name}'s active timer? Any unsaved active time will not be added to history.`)) return;
+    const confirmed = await requestConfirmation({
+      title: "Clear active timer",
+      message: `Force-clear ${user.name}'s active timer? Any unsaved active time will not be added to history.`,
+      confirmText: "Clear Timer",
+      danger: true,
+    });
+    if (!confirmed) return;
     setActionLoading(true);
     setError("");
     try {
@@ -534,22 +577,23 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteUser = async (user) => {
-    const confirmed = window.confirm(
-      `DELETE ${user.name} permanently?\n\nThis will permanently remove the user's account and associated study data.`
-    );
+    const confirmed = await requestConfirmation({
+      title: `Delete ${user.name}?`,
+      message: "This will permanently remove the user's account and associated study data.",
+      confirmText: "Delete User",
+      danger: true,
+    });
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
-    const secondConfirmation =
-      window.confirm(
-        "This action cannot be undone. Continue?"
-      );
+    const secondConfirmation = await requestConfirmation({
+      title: "This action cannot be undone",
+      message: "The user's account and associated study data will be permanently deleted. Continue?",
+      confirmText: "Yes, Delete Permanently",
+      danger: true,
+    });
 
-    if (!secondConfirmation) {
-      return;
-    }
+    if (!secondConfirmation) return;
 
     setActionLoading(true);
     setError("");
@@ -2389,6 +2433,16 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        danger={confirmState.danger}
+        onConfirm={() => closeConfirmation(true)}
+        onCancel={() => closeConfirmation(false)}
+      />
     </div>
   );
 }
@@ -2432,6 +2486,7 @@ function PageHeader({
         </div>
       )}
     </div>
+
   );
 }
 

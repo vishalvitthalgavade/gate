@@ -1,3 +1,5 @@
+import CustomSelect from "../components/CustomSelect";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -879,30 +881,28 @@ export default function History() {
               </div>
 
               {/* TYPE */}
-              <select
+              <CustomSelect
+                ariaLabel="Timer type"
                 value={filterType}
-                onChange={(event) => setFilterType(event.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[13px] text-gray-900 outline-none focus:border-purple-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white sm:py-3 sm:text-sm"
-              >
-                <option value="all">All Timer Types</option>
-                <option value="regular">Regular Timer</option>
-                <option value="pomodoro">Pomodoro</option>
-                <option value="study">Study</option>
-              </select>
+                onChange={setFilterType}
+                options={[
+                  { value: "all", label: "All Timer Types" },
+                  { value: "regular", label: "Regular Timer" },
+                  { value: "pomodoro", label: "Pomodoro" },
+                  { value: "study", label: "Study" },
+                ]}
+              />
 
               {/* DATE */}
-              <select
+              <CustomSelect
+                ariaLabel="History date"
                 value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[13px] text-gray-900 outline-none focus:border-purple-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white sm:py-3 sm:text-sm"
-              >
-                <option value="all">All Dates</option>
-                {availableDates.map(([dateKey, label]) => (
-                  <option key={dateKey} value={dateKey}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedDate}
+                options={[
+                  { value: "all", label: "All Dates" },
+                  ...availableDates.map(([dateKey, label]) => ({ value: dateKey, label })),
+                ]}
+              />
             </div>
 
             {(filterType !== "all" ||
