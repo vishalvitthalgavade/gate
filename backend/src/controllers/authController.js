@@ -51,6 +51,31 @@ function getRefreshExpiry() {
   return expiry;
 }
 
+/* Record authentication activity without ever changing login outcome. */
+async function recordLoginAttempt({ userId = null, email, successful, req }) {
+  try {
+    const forwardedFor = req.headers["x-forwarded-for"];
+    const ipAddress =
+      (typeof forwardedFor === "string" ? forwardedFor.split(",")[0].trim() : null) ||
+      req.ip ||
+      req.socket?.remoteAddress ||
+      null;
+
+    await prisma.loginAttempt.create({
+      data: {
+        userId,
+        email: String(email || "").trim().toLowerCase(),
+        successful: Boolean(successful),
+        attemptedAt: new Date(),
+        ipAddress,
+        userAgent: req.get("user-agent") || null,
+      },
+    });
+  } catch (error) {
+    console.error("Record login attempt error:", error);
+  }
+}
+
 /*
 ====================================================
 REFRESH COOKIE
@@ -298,6 +323,8 @@ async function login(req, res) {
       });
 
     if (!user) {
+      await recordLoginAttempt({ email: normalizedEmail, successful: false, req });
+
       return res.status(401).json({
         success: false,
         message:
@@ -310,6 +337,8 @@ async function login(req, res) {
      */
 
     if (!user.isActive) {
+      await recordLoginAttempt({ userId: user.id, email: normalizedEmail, successful: false, req });
+
       return res.status(403).json({
         success: false,
         message:
@@ -328,6 +357,8 @@ async function login(req, res) {
       );
 
     if (!passwordMatches) {
+      await recordLoginAttempt({ userId: user.id, email: normalizedEmail, successful: false, req });
+
       return res.status(401).json({
         success: false,
         message:
@@ -416,6 +447,13 @@ async function login(req, res) {
       createAccessToken(
         safeUser
       );
+
+    await recordLoginAttempt({
+      userId: updatedLoginUser.id,
+      email: normalizedEmail,
+      successful: true,
+      req,
+    });
 
     return res.json({
       success: true,
