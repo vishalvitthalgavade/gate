@@ -958,3 +958,181 @@ html.dark .gate-skeleton::after {
     margin-top: 1rem;
   }
 }
+
+/* =========================================================
+   Mobile landscape polish
+   - Applies only to phones/tablets below 768px.
+   - Desktop/laptop layouts are intentionally untouched.
+   ========================================================= */
+@media (max-width: 767px) and (orientation: landscape) {
+  html, body, #root {
+    min-height: 100%;
+  }
+
+  .gate-mobile-header {
+    height: 50px !important;
+    min-height: 50px !important;
+    padding: 0 10px !important;
+    z-index: 60 !important;
+  }
+
+  .gate-mobile-header .ml-auto {
+    gap: 4px !important;
+    padding: 4px 7px !important;
+  }
+
+  .gate-mobile-header .ml-auto p:first-child {
+    font-size: 8px !important;
+  }
+
+  .gate-mobile-header .ml-auto p:last-child {
+    font-size: 7px !important;
+  }
+
+  .gate-mobile-header > div.ml-3 {
+    margin-left: 7px !important;
+  }
+
+  .gate-mobile-header > div.ml-3 h1 {
+    font-size: 13px !important;
+    line-height: 1.1 !important;
+  }
+
+  .gate-mobile-header > div.ml-3 p {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Keep the drawer easy to reach and independently scrollable. */
+  .gate-sidebar {
+    width: min(82vw, 310px) !important;
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+    z-index: 70 !important;
+  }
+
+  .gate-sidebar nav {
+    min-height: 0;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gate-sidebar > div:first-child {
+    flex-shrink: 0;
+  }
+
+  .gate-main-content {
+    min-height: calc(100dvh - 50px) !important;
+    padding: 10px !important;
+  }
+
+  /* Compact the page header so the content has usable landscape height. */
+  main h1 {
+    font-size: 1.25rem !important;
+  }
+
+  /* Timer: use the extra width instead of stacking everything vertically. */
+  .timer-landscape-content {
+    min-height: 0 !important;
+    height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .timer-landscape-content > div {
+    padding-top: 2.5rem !important;
+  }
+
+  .timer-landscape-content .gate-timer-digits {
+    font-size: clamp(3rem, 13vw, 6.5rem) !important;
+    line-height: .95 !important;
+    letter-spacing: -.045em;
+  }
+
+  .timer-landscape-content .timer-action-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: min(100%, 520px);
+    margin: .7rem auto 0 !important;
+    gap: .45rem !important;
+  }
+
+  .timer-landscape-content .timer-action-row > button {
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    min-height: 40px !important;
+    padding: .55rem .7rem !important;
+    font-size: .75rem !important;
+  }
+
+  /* Don't let the top controls consume the whole landscape timer. */
+  .timer-landscape-content ~ * {
+    max-width: 100%;
+  }
+
+  /* Timer card controls remain in one tidy row and never cover the digits. */
+  .timer-landscape-content {
+    padding-top: 0 !important;
+  }
+
+  .timer-landscape-content .gate-timer-live {
+    margin-top: 0;
+  }
+
+  /* Keep the timer card compact in landscape; fullscreen retains its own layout. */
+  .gate-timer-card-live,
+  [class*="rounded-2xl"][class*="shadow-2xl"] {
+    max-height: none;
+  }
+
+  /* Subject/topic controls sit side-by-side in landscape. */
+  main .mb-5.grid.grid-cols-1,
+  main .mb-5.grid.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .5rem !important;
+  }
+
+  /* The timer mode switcher remains compact and reachable. */
+  main .mb-5.grid.grid-cols-2 > button {
+    min-height: 38px !important;
+    padding-top: .45rem !important;
+    padding-bottom: .45rem !important;
+  }
+
+  /* General cards should not consume the entire short landscape viewport. */
+  main .rounded-2xl {
+    border-radius: 15px;
+  }
+}
+
+@media (max-width: 767px) and (orientation: landscape) and (max-height: 430px) {
+  .gate-mobile-header {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .gate-main-content {
+    min-height: calc(100dvh - 44px) !important;
+    padding: 8px !important;
+  }
+
+  .timer-landscape-content .gate-timer-digits {
+    font-size: clamp(2.7rem, 12vw, 5.25rem) !important;
+  }
+
+  .timer-landscape-content .timer-action-row > button {
+    min-height: 36px !important;
+    padding: .4rem .55rem !important;
+  }
+
+  .timer-landscape-content > div {
+    padding-top: 2.1rem !important;
+  }
+
+  /* Make the drawer comfortably usable even on short landscape phones. */
+  .gate-sidebar {
+    width: min(84vw, 300px) !important;
+  }
+}
