@@ -104,6 +104,16 @@ const MOTIVATIONAL_QUOTES = [
   { text: "You can't build a reputation on what you are going to do.", author: "Henry Ford" },
   { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
   { text: "There is no substitute for hard work.", author: "Thomas Edison" },
+  { text: "Cricket teaches you a lot in life, especially during difficult times.", author: "MS Dhoni" },
+  { text: "Focus on the process, don’t get caught up in the hype.", author: "MS Dhoni" },
+  { text: "You make sure that your team doesn’t feel that extra pressure by avoiding whatever can be avoided.", author: "MS Dhoni" },
+  { text: "When you are going through a rough patch, sometimes it is best to give yourself a break and come back fresh.", author: "MS Dhoni" },
+  { text: "While the pressure won’t go away, I’ve got to continue handling it and not allow my mind to get cluttered.", author: "MS Dhoni" },
+  { text: "Whatever you want to do, do it with full passion, and work really hard towards it.", author: "Virat Kohli" },
+  { text: "I would only count two things here: self-belief and hard work.", author: "Virat Kohli" },
+  { text: "I work hard which won’t be visible to people on a daily basis.", author: "Virat Kohli" },
+  { text: "Not working hard is not an option.", author: "Virat Kohli" },
+  { text: "I work as hard, if not harder, than anyone else.", author: "Virat Kohli" },
 ];
 
 function Timer() {
@@ -760,9 +770,17 @@ function Timer() {
               “{MOTIVATIONAL_QUOTES[quoteIndex].text}”
             </blockquote>
 
-            <p className={`mt-4 text-sm ${isDark ? "text-zinc-400" : "text-slate-500"}`}>
-              — {MOTIVATIONAL_QUOTES[quoteIndex].author}
-            </p>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <p className={`text-sm ${isDark ? "text-zinc-400" : "text-slate-500"}`}>
+                — {MOTIVATIONAL_QUOTES[quoteIndex].author}
+              </p>
+              <span
+                aria-label={`Quote number ${quoteIndex + 1}`}
+                className={`text-[10px] font-medium tracking-wide ${isDark ? "text-zinc-600" : "text-slate-400"}`}
+              >
+                #{quoteIndex + 1}
+              </span>
+            </div>
 
             <button
               type="button"
