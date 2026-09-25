@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   Sun as SunIcon,
   Moon as MoonIcon,
+  Quote,
+  Shuffle,
 } from "lucide-react";
 
 import { GATE_SYLLABUS } from "../data/syllabus";
@@ -41,6 +43,68 @@ function formatShortTime(totalSeconds) {
     seconds
   ).padStart(2, "0")}`;
 }
+
+const MOTIVATIONAL_QUOTES = [
+  { text: "It always seems impossible until it is done.", author: "Nelson Mandela" },
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Well done is better than well said.", author: "Benjamin Franklin" },
+  { text: "Energy and persistence conquer all things.", author: "Benjamin Franklin" },
+  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+  { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+  { text: "The future depends on what you do today.", author: "Mahatma Gandhi" },
+  { text: "Great things are done by a series of small things brought together.", author: "Vincent van Gogh" },
+  { text: "The journey of a thousand miles begins with one step.", author: "Lao Tzu" },
+  { text: "Well begun is half done.", author: "Aristotle" },
+  { text: "Quality is not an act, it is a habit.", author: "Aristotle" },
+  { text: "We are what we repeatedly do.", author: "Will Durant" },
+  { text: "Act as if what you do makes a difference. It does.", author: "William James" },
+  { text: "Nothing will work unless you do.", author: "Maya Angelou" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "Keep your eyes on the stars, and your feet on the ground.", author: "Theodore Roosevelt" },
+  { text: "Do what you can, with what you have, where you are.", author: "Theodore Roosevelt" },
+  { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe" },
+  { text: "Adversity introduces a man to himself.", author: "Albert Einstein" },
+  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+  { text: "Strive not to be a success, but rather to be of value.", author: "Albert Einstein" },
+  { text: "I have not failed. I've just found 10,000 ways that won't work.", author: "Thomas Edison" },
+  { text: "Opportunity is missed by most people because it is dressed in overalls and looks like work.", author: "Thomas Edison" },
+  { text: "Genius is one percent inspiration and ninety-nine percent perspiration.", author: "Thomas Edison" },
+  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+  { text: "Our greatest glory is not in never falling, but in rising every time we fall.", author: "Confucius" },
+  { text: "Everything has beauty, but not everyone sees it.", author: "Confucius" },
+  { text: "He who asks a question is a fool for five minutes; he who does not ask remains a fool forever.", author: "Confucius" },
+  { text: "No pressure, no diamonds.", author: "Thomas Carlyle" },
+  { text: "The only way out is through.", author: "Robert Frost" },
+  { text: "Nothing great was ever achieved without enthusiasm.", author: "Ralph Waldo Emerson" },
+  { text: "The reward of a thing well done is having done it.", author: "Ralph Waldo Emerson" },
+  { text: "Once you make a decision, the universe conspires to make it happen.", author: "Ralph Waldo Emerson" },
+  { text: "Do not wait; the time will never be just right.", author: "Napoleon Hill" },
+  { text: "Patience, persistence and perspiration make an unbeatable combination for success.", author: "Napoleon Hill" },
+  { text: "If you cannot do great things, do small things in a great way.", author: "Napoleon Hill" },
+  { text: "Success is walking from failure to failure with no loss of enthusiasm.", author: "Winston Churchill" },
+  { text: "Continuous effort, not strength or intelligence, is the key to unlocking our potential.", author: "Winston Churchill" },
+  { text: "You have power over your mind—not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
+  { text: "The impediment to action advances action. What stands in the way becomes the way.", author: "Marcus Aurelius" },
+  { text: "Waste no more time arguing about what a good man should be. Be one.", author: "Marcus Aurelius" },
+  { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca" },
+  { text: "Difficulties strengthen the mind, as labor does the body.", author: "Seneca" },
+  { text: "We suffer more often in imagination than in reality.", author: "Seneca" },
+  { text: "No man is more unhappy than he who never faces adversity.", author: "Seneca" },
+  { text: "First say to yourself what you would be; and then do what you have to do.", author: "Epictetus" },
+  { text: "It's not what happens to you, but how you react to it that matters.", author: "Epictetus" },
+  { text: "If you want to improve, be content to be thought foolish and stupid.", author: "Epictetus" },
+  { text: "He who has a why to live can bear almost any how.", author: "Friedrich Nietzsche" },
+  { text: "That which does not kill us makes us stronger.", author: "Friedrich Nietzsche" },
+  { text: "The only person you are destined to become is the person you decide to be.", author: "Ralph Waldo Emerson" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "Don't count the days, make the days count.", author: "Muhammad Ali" },
+  { text: "He who is not courageous enough to take risks will accomplish nothing in life.", author: "Muhammad Ali" },
+  { text: "Champions keep playing until they get it right.", author: "Billie Jean King" },
+  { text: "The harder the conflict, the more glorious the triumph.", author: "Thomas Paine" },
+  { text: "You can't build a reputation on what you are going to do.", author: "Henry Ford" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "There is no substitute for hard work.", author: "Thomas Edison" },
+];
 
 function Timer() {
   const { theme, toggleTheme } = useTheme();
@@ -82,6 +146,7 @@ function Timer() {
   const [takeoverMinutes, setTakeoverMinutes] = useState("");
   const [takeoverSubmitting, setTakeoverSubmitting] = useState(false);
   const [takeoverError, setTakeoverError] = useState("");
+  const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length));
 
   const availableTopics = useMemo(() => {
     if (!selectedSubject) {
@@ -670,99 +735,59 @@ function Timer() {
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
-            <p className="text-sm font-medium text-slate-900 dark:text-white">
-              Stays running
-            </p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
-              Open Dashboard or any other page — the timer keeps counting and
-              saves when you press Save.
-            </p>
-          </div>
-
-          <div
-            className={`rounded-xl border p-4 ${
-              isDark
-                ? "border-zinc-800 bg-zinc-900/30"
-                : "border-slate-200 bg-white"
-            }`}
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                {isDark ? (
-                  <MoonIcon size={18} className="text-purple-400" />
-                ) : (
-                  <SunIcon size={18} className="text-amber-500" />
-                )}
-                <div>
-                  <p
-                    className={`text-sm font-medium ${
-                      isDark ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    {isDark ? "Dark Mode" : "Light Mode"}
-                  </p>
-                  <p
-                    className={`mt-1 text-xs ${
-                      isDark ? "text-zinc-500" : "text-slate-500"
-                    }`}
-                  >
-                    Switch the timer appearance.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={toggleTheme}
-                role="switch"
-                aria-checked={isDark}
-                aria-label="Toggle dark and light mode"
-                className={`relative inline-flex h-8 w-[72px] shrink-0 items-center rounded-full border p-1 shadow-inner transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900 ${
-                  isDark ? "border-purple-500/50 bg-purple-600" : "border-slate-300 bg-slate-200"
-                }`}
-              >
-                <span aria-hidden="true" className={`absolute left-1 top-1 flex h-6 w-8 items-center justify-center rounded-full bg-white text-[9px] font-bold shadow-md transition-transform duration-200 ease-out ${isDark ? "translate-x-7 text-purple-700" : "translate-x-0 text-slate-600"}`}>
-                  {isDark ? "ON" : "OFF"}
-                </span>
-              </button>
+        <section
+          aria-label="Motivational quote"
+          className={`relative mt-5 overflow-hidden rounded-2xl border p-5 sm:mt-6 sm:p-7 ${
+            isDark
+              ? "border-purple-500/20 bg-gradient-to-br from-purple-950/30 via-zinc-900/70 to-zinc-950"
+              : "border-purple-100 bg-gradient-to-br from-purple-50 via-white to-slate-50"
+          }`}
+        >
+          <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl" />
+          <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
+            <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-full ${isDark ? "bg-purple-500/15 text-purple-300" : "bg-purple-100 text-purple-600"}`}>
+              <Quote size={18} aria-hidden="true" />
             </div>
-          </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Monitor size={18} className="text-purple-400" />
-                <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">
-                    Fullscreen Timer
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
-                    Focus without distractions.
-                  </p>
-                </div>
-              </div>
+            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${isDark ? "text-purple-300/80" : "text-purple-600"}`}>
+              Focus thought
+            </p>
 
-              <button
-                type="button"
-                onClick={toggleFullscreen}
-                role="switch"
-                aria-checked={isFullscreen}
-                aria-label="Toggle fullscreen timer"
-                className={`relative inline-flex h-8 w-[72px] shrink-0 items-center rounded-full border p-1 shadow-inner transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900 ${
-                  isFullscreen
-                    ? "border-purple-500/50 bg-purple-600"
-                    : isDark ? "border-zinc-700 bg-zinc-800" : "border-slate-300 bg-slate-200"
-                }`}
-              >
-                <span aria-hidden="true" className={`absolute left-1 top-1 flex h-6 w-8 items-center justify-center rounded-full bg-white text-[9px] font-bold shadow-md transition-transform duration-200 ease-out ${isFullscreen ? "translate-x-7 text-purple-700" : "translate-x-0 text-slate-600"}`}>
-                  {isFullscreen ? "ON" : "OFF"}
-                </span>
-              </button>
-            </div>
+            <blockquote
+              key={quoteIndex}
+              className={`mt-4 max-w-2xl text-lg font-medium leading-relaxed sm:text-2xl ${isDark ? "text-white" : "text-slate-900"}`}
+            >
+              “{MOTIVATIONAL_QUOTES[quoteIndex].text}”
+            </blockquote>
+
+            <p className={`mt-4 text-sm ${isDark ? "text-zinc-400" : "text-slate-500"}`}>
+              — {MOTIVATIONAL_QUOTES[quoteIndex].author}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setQuoteIndex((current) => {
+                  if (MOTIVATIONAL_QUOTES.length <= 1) return current;
+                  let next = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+                  while (next === current) {
+                    next = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+                  }
+                  return next;
+                });
+              }}
+              aria-label="Show another motivational quote"
+              title="New motivational quote"
+              className={`mt-6 flex h-12 w-12 items-center justify-center rounded-full border shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
+                isDark
+                  ? "border-purple-400/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20"
+                  : "border-purple-200 bg-white text-purple-600 hover:bg-purple-50"
+              }`}
+            >
+              <Shuffle size={18} aria-hidden="true" />
+            </button>
           </div>
-        </div>
+        </section>
       </div>
 
       <ConfirmDialog
