@@ -221,7 +221,7 @@ function computePomodoroHydration(saved, defaultStudySeconds) {
 
 export function TimerProvider({ children }) {
   const { authFetch, isAuthenticated, user } = useAuth();
-  const { pomodoroSettings, refreshFromServer } = useStudy();
+  const { addSession, pomodoroSettings, refreshFromServer } = useStudy();
 
   const userId = user?.id || null;
   const timerOwnerIdRef = useRef(getTimerOwnerId());
@@ -518,8 +518,7 @@ export function TimerProvider({ children }) {
     activeStudyRequest,
     getPomodoroElapsedSeconds,
     getSimpleElapsedSeconds,
-    startActivePomodoroStudy,
-    startActiveSimpleStudy,
+    refreshFromServer,
   ]);
 
   const pauseActiveStudy = useCallback(
@@ -533,17 +532,48 @@ export function TimerProvider({ children }) {
   );
 
   const stopActiveStudy = useCallback(async ({ save = false, duration = 0, type = "Regular Timer", startedAt = null } = {}) => {
-    return activeStudyRequest("/sessions/active/stop", {
+    const clientId = crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const subject = selectedSubjectRef.current || "No subject";
+    const topic = selectedTopicRef.current || "No topic";
+    const result = await activeStudyRequest("/sessions/active/stop", {
       ownerId: timerOwnerIdRef.current,
       saveSession: save,
       duration,
       type,
-      subject: selectedSubjectRef.current || "No subject",
-      topic: selectedTopicRef.current || "No topic",
+      subject,
+      topic,
       startedAt,
-      clientId: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      clientId,
     });
-  }, [activeStudyRequest]);
+
+    // Preserve completed time locally when a transient stop failure prevents
+    // the server from saving it. Reusing the request id makes retry safe.
+    const blockedByAccessOrOwnership =
+      !result.ok && [401, 403, 409].includes(result.status);
+    const serverDidNotReturnSavedSession =
+      result.ok && !result.data?.session;
+
+    if (
+      save && Number(duration) > 0 && !blockedByAccessOrOwnership &&
+      (!result.ok || serverDidNotReturnSavedSession)
+    ) {
+      try {
+        const localSession = await addSession(
+          duration,
+          type,
+          subject,
+          topic,
+          startedAt,
+          clientId
+        );
+        return { ...result, savedLocally: Boolean(localSession) };
+      } catch (error) {
+        console.error("Could not save the completed timer locally:", error);
+      }
+    }
+
+    return result;
+  }, [activeStudyRequest, addSession]);
 
   const startSimpleTimer = useCallback(async () => {
     if (simpleRunningRef.current) {
@@ -1234,6 +1264,7 @@ export function TimerProvider({ children }) {
       changeTimerMode,
       completedPomodoros,
       displaySeconds,
+      dismissTimerConflict,
       handleSubjectChange,
       isRunning,
       pausePomodoro,

@@ -10,10 +10,7 @@ import {
   SkipForward,
   Maximize,
   Minimize,
-  Monitor,
   AlertTriangle,
-  Sun as SunIcon,
-  Moon as MoonIcon,
   Quote,
   Shuffle,
 } from "lucide-react";
@@ -45,79 +42,28 @@ function formatShortTime(totalSeconds) {
 }
 
 const MOTIVATIONAL_QUOTES = [
-  { text: "It always seems impossible until it is done.", author: "Nelson Mandela" },
-  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
-  { text: "Well done is better than well said.", author: "Benjamin Franklin" },
-  { text: "Energy and persistence conquer all things.", author: "Benjamin Franklin" },
-  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
-  { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
-  { text: "The future depends on what you do today.", author: "Mahatma Gandhi" },
-  { text: "Great things are done by a series of small things brought together.", author: "Vincent van Gogh" },
-  { text: "The journey of a thousand miles begins with one step.", author: "Lao Tzu" },
-  { text: "Well begun is half done.", author: "Aristotle" },
-  { text: "Quality is not an act, it is a habit.", author: "Aristotle" },
-  { text: "We are what we repeatedly do.", author: "Will Durant" },
-  { text: "Act as if what you do makes a difference. It does.", author: "William James" },
-  { text: "Nothing will work unless you do.", author: "Maya Angelou" },
-  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
-  { text: "Keep your eyes on the stars, and your feet on the ground.", author: "Theodore Roosevelt" },
-  { text: "Do what you can, with what you have, where you are.", author: "Theodore Roosevelt" },
-  { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe" },
-  { text: "Adversity introduces a man to himself.", author: "Albert Einstein" },
-  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
-  { text: "Strive not to be a success, but rather to be of value.", author: "Albert Einstein" },
-  { text: "I have not failed. I've just found 10,000 ways that won't work.", author: "Thomas Edison" },
-  { text: "Opportunity is missed by most people because it is dressed in overalls and looks like work.", author: "Thomas Edison" },
-  { text: "Genius is one percent inspiration and ninety-nine percent perspiration.", author: "Thomas Edison" },
-  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
-  { text: "Our greatest glory is not in never falling, but in rising every time we fall.", author: "Confucius" },
-  { text: "Everything has beauty, but not everyone sees it.", author: "Confucius" },
-  { text: "He who asks a question is a fool for five minutes; he who does not ask remains a fool forever.", author: "Confucius" },
-  { text: "No pressure, no diamonds.", author: "Thomas Carlyle" },
-  { text: "The only way out is through.", author: "Robert Frost" },
-  { text: "Nothing great was ever achieved without enthusiasm.", author: "Ralph Waldo Emerson" },
-  { text: "The reward of a thing well done is having done it.", author: "Ralph Waldo Emerson" },
-  { text: "Once you make a decision, the universe conspires to make it happen.", author: "Ralph Waldo Emerson" },
-  { text: "Do not wait; the time will never be just right.", author: "Napoleon Hill" },
-  { text: "Patience, persistence and perspiration make an unbeatable combination for success.", author: "Napoleon Hill" },
-  { text: "If you cannot do great things, do small things in a great way.", author: "Napoleon Hill" },
-  { text: "Success is walking from failure to failure with no loss of enthusiasm.", author: "Winston Churchill" },
-  { text: "Continuous effort, not strength or intelligence, is the key to unlocking our potential.", author: "Winston Churchill" },
-  { text: "You have power over your mind—not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
-  { text: "The impediment to action advances action. What stands in the way becomes the way.", author: "Marcus Aurelius" },
-  { text: "Waste no more time arguing about what a good man should be. Be one.", author: "Marcus Aurelius" },
-  { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca" },
-  { text: "Difficulties strengthen the mind, as labor does the body.", author: "Seneca" },
-  { text: "We suffer more often in imagination than in reality.", author: "Seneca" },
-  { text: "No man is more unhappy than he who never faces adversity.", author: "Seneca" },
-  { text: "First say to yourself what you would be; and then do what you have to do.", author: "Epictetus" },
-  { text: "It's not what happens to you, but how you react to it that matters.", author: "Epictetus" },
-  { text: "If you want to improve, be content to be thought foolish and stupid.", author: "Epictetus" },
-  { text: "He who has a why to live can bear almost any how.", author: "Friedrich Nietzsche" },
-  { text: "That which does not kill us makes us stronger.", author: "Friedrich Nietzsche" },
-  { text: "The only person you are destined to become is the person you decide to be.", author: "Ralph Waldo Emerson" },
-  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
-  { text: "Don't count the days, make the days count.", author: "Muhammad Ali" },
-  { text: "He who is not courageous enough to take risks will accomplish nothing in life.", author: "Muhammad Ali" },
-  { text: "Champions keep playing until they get it right.", author: "Billie Jean King" },
-  { text: "The harder the conflict, the more glorious the triumph.", author: "Thomas Paine" },
-  { text: "You can't build a reputation on what you are going to do.", author: "Henry Ford" },
-  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
-  { text: "There is no substitute for hard work.", author: "Thomas Edison" },
-  { text: "Cricket teaches you a lot in life, especially during difficult times.", author: "MS Dhoni" },
-  { text: "Focus on the process, don’t get caught up in the hype.", author: "MS Dhoni" },
-  { text: "You make sure that your team doesn’t feel that extra pressure by avoiding whatever can be avoided.", author: "MS Dhoni" },
-  { text: "When you are going through a rough patch, sometimes it is best to give yourself a break and come back fresh.", author: "MS Dhoni" },
-  { text: "While the pressure won’t go away, I’ve got to continue handling it and not allow my mind to get cluttered.", author: "MS Dhoni" },
-  { text: "Whatever you want to do, do it with full passion, and work really hard towards it.", author: "Virat Kohli" },
-  { text: "I would only count two things here: self-belief and hard work.", author: "Virat Kohli" },
-  { text: "I work hard which won’t be visible to people on a daily basis.", author: "Virat Kohli" },
-  { text: "Not working hard is not an option.", author: "Virat Kohli" },
-  { text: "I work as hard, if not harder, than anyone else.", author: "Virat Kohli" },
+  { text: "Every concept you master today makes the next problem easier to face.", author: "Study note" },
+  { text: "A focused hour of revision can turn confusion into confidence.", author: "Study note" },
+  { text: "Your preparation is built in the quiet sessions when nobody is watching.", author: "Study note" },
+  { text: "Learn the reason behind each formula; understanding travels to new questions.", author: "Study note" },
+  { text: "A mock test is feedback, not a verdict. Review every missed question.", author: "Study note" },
+  { text: "Strong fundamentals make unfamiliar problems approachable.", author: "Study note" },
+  { text: "Use every wrong answer to find the concept worth revising next.", author: "Study note" },
+  { text: "Small, consistent study sessions add up to a syllabus you can trust.", author: "Study note" },
+  { text: "The GATE paper rewards clear concepts and calm problem solving.", author: "Study note" },
+  { text: "Practice the method until it is clear, then repeat until recall is quick.", author: "Study note" },
+  { text: "One topic understood well is progress you can carry into the exam hall.", author: "Study note" },
+  { text: "You do not need to finish everything today. Make honest progress on the next topic.", author: "Study note" },
+  { text: "Plan your revision, solve questions, review mistakes, and begin again tomorrow.", author: "Study note" },
+  { text: "A calm, prepared mind can find a path through a difficult question.", author: "Study note" },
+  { text: "Today’s practice is building the problem-solving skills your career will use.", author: "Study note" },
+  { text: "Take a planned break when you need one; sustainable focus beats burnout.", author: "Study note" },
+  { text: "Your rank is one goal. The knowledge you build stays useful long after the exam.", author: "Study note" },
+  { text: "Show up for the study block you planned. That is how long-term goals move forward.", author: "Study note" },
 ];
 
 function Timer() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { pomodoroSettings, updatePomodoroSettings } = useStudy();
   const {
     timerMode,
@@ -196,12 +142,11 @@ function Timer() {
   async function toggleFullscreen() {
     try {
       if (!document.fullscreenElement) {
-        await timerCardRef.current?.requestFullscreen();
-        setIsFullscreen(true);
-        await requestScreenWakeLock();
+        const timerCard = timerCardRef.current;
+        if (!timerCard?.requestFullscreen) return;
+        await timerCard.requestFullscreen();
       } else {
         await document.exitFullscreen();
-        setIsFullscreen(false);
       }
     } catch (error) {
       console.error("Fullscreen error:", error);

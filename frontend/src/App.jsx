@@ -29,6 +29,7 @@ import { StudyProvider } from "./context/StudyContext";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { TimerProvider } from "./context/TimerContext";
+import { getGateDaysLeft } from "./data/exam";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,41 +40,11 @@ function App() {
   ----------------------------------------------------
   */
 
-  const GATE_EXAM_DATE =
-    "2027-02-07T00:00:00+05:30";
-
-  const [daysLeft, setDaysLeft] = useState(() => {
-    const now = new Date();
-    const examDate = new Date(
-      GATE_EXAM_DATE
-    );
-
-    return Math.max(
-      0,
-      Math.ceil(
-        (examDate.getTime() - now.getTime()) /
-          (1000 * 60 * 60 * 24)
-      )
-    );
-  });
+  const [daysLeft, setDaysLeft] = useState(() => getGateDaysLeft());
 
   useEffect(() => {
     function updateDaysLeft() {
-      const now = new Date();
-      const examDate = new Date(
-        GATE_EXAM_DATE
-      );
-
-      setDaysLeft(
-        Math.max(
-          0,
-          Math.ceil(
-            (examDate.getTime() -
-              now.getTime()) /
-              (1000 * 60 * 60 * 24)
-          )
-        )
-      );
+      setDaysLeft(getGateDaysLeft());
     }
 
     updateDaysLeft();

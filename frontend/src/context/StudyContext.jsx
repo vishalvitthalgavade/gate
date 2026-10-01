@@ -836,7 +836,8 @@ export function StudyProvider({ children }) {
       type,
       subject = "No subject",
       topic = "No topic",
-      startedAt = null
+      startedAt = null,
+      clientId = createClientId()
     ) => {
       if (!userId) {
         return null;
@@ -889,7 +890,6 @@ export function StudyProvider({ children }) {
           )
         );
       } else {
-        const clientId = createClientId();
         sessionToSave = {
           id: `local-${clientId}`,
           clientId,
@@ -1381,4 +1381,3 @@ export function StudyProvider({ children }) {
     </StudyContext.Provider>
   );
 }
-

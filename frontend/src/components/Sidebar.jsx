@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { useTimer } from "../context/TimerContext";
+import { getGateDaysLeft } from "../data/exam";
 import { NavLink, useNavigate } from "react-router-dom";
 
 function formatSidebarTime(totalSeconds) {
@@ -58,47 +59,11 @@ function Sidebar({ isOpen, setIsOpen }) {
 
   const navigate = useNavigate();
 
-  /*
-  ----------------------------------------------------
-  GATE EXAM COUNTDOWN
-  ----------------------------------------------------
-
-  Change this date if the official GATE CSE exam date
-  changes.
-  ----------------------------------------------------
-  */
-  const GATE_EXAM_DATE = "2027-02-07T00:00:00+05:30";
-
-  const [daysLeft, setDaysLeft] = useState(() => {
-    const now = new Date();
-    const examDate = new Date(GATE_EXAM_DATE);
-
-    const difference =
-      examDate.getTime() - now.getTime();
-
-    return Math.max(
-      0,
-      Math.ceil(difference / (1000 * 60 * 60 * 24))
-    );
-  });
+  const [daysLeft, setDaysLeft] = useState(() => getGateDaysLeft());
 
   useEffect(() => {
     function updateDaysLeft() {
-      const now = new Date();
-      const examDate = new Date(GATE_EXAM_DATE);
-
-      const difference =
-        examDate.getTime() - now.getTime();
-
-      setDaysLeft(
-        Math.max(
-          0,
-          Math.ceil(
-            difference /
-              (1000 * 60 * 60 * 24)
-          )
-        )
-      );
+      setDaysLeft(getGateDaysLeft());
     }
 
     updateDaysLeft();

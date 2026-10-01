@@ -240,7 +240,7 @@ export default function History() {
       const data = await response.json();
       const active = data?.activeStudy;
       setActiveStudy(
-        active?.isRunning
+        active
           ? { ...active, elapsedSeconds: Number(active.elapsedSeconds || 0) }
           : null
       );
@@ -284,6 +284,7 @@ export default function History() {
       completedAt: now,
       createdAt: now,
       isLive: true,
+      isRunning: Boolean(activeStudy.isRunning),
     };
   }, [activeStudy, liveSeconds]);
 
@@ -634,7 +635,7 @@ export default function History() {
             </div>
             <p className="mt-2 text-[10px] text-gray-400 dark:text-zinc-600 sm:text-xs">
               {liveUpdatedAt
-                ? `Live timer checked at ${liveUpdatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+                ? `Timer status checked at ${liveUpdatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
                 : "Checking live timer..."}
             </p>
           </header>
@@ -644,7 +645,7 @@ export default function History() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-green-500" />
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">Timer running live</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{liveSession.isRunning ? "Timer running live" : "Timer paused · ready to resume"}</span>
                 </div>
                 <p className="mt-1 truncate text-xs text-gray-500 dark:text-zinc-500">
                   {liveSession.subject} · {liveSession.topic}
@@ -1059,7 +1060,7 @@ export default function History() {
 
                                 {session.isLive ? (
                                   <span className="inline-flex items-center rounded-full border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[9px] font-medium leading-none text-green-600 dark:text-green-400">
-                                    Live
+                                    {session.isRunning ? "Live" : "Paused"}
                                   </span>
                                 ) : session.id?.startsWith("local-") ? (
                                   <span className="inline-flex items-center rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-medium leading-none text-yellow-600 dark:text-yellow-400">

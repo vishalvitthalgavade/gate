@@ -6,12 +6,12 @@ import {
   ChevronRight,
   Circle,
   Plus,
+  Search,
   Trash2,
   X,
 } from "lucide-react";
 
 import { GATE_SYLLABUS } from "../data/syllabus";
-import { useTheme } from "../context/ThemeContext";
 import { useStudy } from "../context/useStudy";
 
 /* =========================================================
@@ -55,8 +55,6 @@ function loadJSON(key, fallback) {
 ========================================================= */
 
 function Syllabus() {
-  const { theme } = useTheme();
-
   /*
    * StudyContext is now the source of truth for
    * completed topics.
@@ -134,6 +132,7 @@ function Syllabus() {
     expandedSubjects,
     setExpandedSubjects,
   ] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   /* =======================================================
      MODAL
@@ -466,6 +465,33 @@ function Syllabus() {
     deletedTopics,
     deletedUnits,
   ]);
+
+  const visibleSyllabus = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    if (!query) return syllabus;
+
+    return Object.fromEntries(
+      Object.entries(syllabus).flatMap(([subject, units]) => {
+        if (subject.toLocaleLowerCase().includes(query)) {
+          return [[subject, units]];
+        }
+
+        const matchingUnits = Object.fromEntries(
+          Object.entries(units).flatMap(([unit, topics]) => {
+            if (unit.toLocaleLowerCase().includes(query)) {
+              return [[unit, topics]];
+            }
+            const matchingTopics = topics.filter((topic) =>
+              topic.toLocaleLowerCase().includes(query)
+            );
+            return matchingTopics.length ? [[unit, matchingTopics]] : [];
+          })
+        );
+
+        return Object.keys(matchingUnits).length ? [[subject, matchingUnits]] : [];
+      })
+    );
+  }, [searchQuery, syllabus]);
 
   /* =======================================================
      TOGGLE TOPIC
@@ -1261,6 +1287,18 @@ function Syllabus() {
 
         </div>
 
+        <label className="relative mb-5 block">
+          <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search subjects, units, or topics"
+            aria-label="Search syllabus"
+            className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm text-gray-900 shadow-sm outline-none placeholder:text-gray-400 focus:border-purple-400 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:placeholder:text-zinc-500"
+          />
+        </label>
+
         {/* =================================================
             SUBJECTS
         ================================================= */}
@@ -1268,7 +1306,7 @@ function Syllabus() {
         <div className="space-y-3">
 
           {Object.keys(
-            syllabus
+            visibleSyllabus
           ).map(
             (subject) => {
 
@@ -1282,9 +1320,7 @@ function Syllabus() {
                 };
 
               const expanded =
-                !!expandedSubjects[
-                  subject
-                ];
+                !!expandedSubjects[subject] || Boolean(searchQuery.trim());
 
               return (
                 <div
@@ -1415,7 +1451,7 @@ function Syllabus() {
                       <div className="divide-y divide-gray-200 dark:divide-zinc-800">
 
                         {Object.entries(
-                          syllabus[
+                          visibleSyllabus[
                             subject
                           ]
                         ).map(
@@ -1650,6 +1686,13 @@ function Syllabus() {
                 </div>
               );
             }
+          )}
+
+          {Object.keys(visibleSyllabus).length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-5 py-10 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
+              <p className="font-semibold text-gray-900 dark:text-white">No matching syllabus items</p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-zinc-500">Try another subject, unit, or topic name.</p>
+            </div>
           )}
 
         </div>
