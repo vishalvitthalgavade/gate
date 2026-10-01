@@ -10,6 +10,11 @@ import {
 
 import { useAuth } from "./AuthContext";
 import { useStudy } from "./useStudy";
+import {
+  closeTimerNotification,
+  requestTimerNotificationPermission,
+  showTimerNotification,
+} from "../utils/timerNotification";
 
 const TimerContext = createContext(null);
 
@@ -73,6 +78,16 @@ function persistTimer(state) {
   } catch {
     // Ignore storage failures.
   }
+}
+
+function formatNotificationTime(totalSeconds) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds || 0));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  return [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(":");
 }
 
 function playBrowserBeep() {
@@ -277,6 +292,17 @@ export function TimerProvider({ children }) {
   const [pomodoroRunning, setPomodoroRunning] = useState(
     init.pomodoro.running
   );
+  const [timerNotificationActive, setTimerNotificationActive] = useState(
+    Boolean(
+      init.simple.running || init.pomodoro.running ||
+      init.saved?.simpleSessionStartedAt ||
+      init.saved?.pomodoroSessionStartedAt
+    )
+  );
+  const [timerNotificationsAllowed, setTimerNotificationsAllowed] = useState(
+    () => typeof Notification !== "undefined" && Notification.permission === "granted"
+  );
+  const timerNotificationActiveRef = useRef(timerNotificationActive);
   const [completedPomodoros, setCompletedPomodoros] = useState(
     init.saved?.completedPomodoros || 0
   );
@@ -309,6 +335,8 @@ export function TimerProvider({ children }) {
   const selectedSubjectRef = useRef(selectedSubject);
   const selectedTopicRef = useRef(selectedTopic);
   const timerModeRef = useRef(timerMode);
+  const simpleSecondsRef = useRef(simpleSeconds);
+  const pomodoroSecondsRef = useRef(pomodoroSeconds);
   const restoredRef = useRef(false);
   const simpleStartInFlightRef = useRef(false);
   const timerChannelRef = useRef(null);
@@ -320,6 +348,9 @@ export function TimerProvider({ children }) {
   selectedSubjectRef.current = selectedSubject;
   selectedTopicRef.current = selectedTopic;
   timerModeRef.current = timerMode;
+  timerNotificationActiveRef.current = timerNotificationActive;
+  simpleSecondsRef.current = simpleSeconds;
+  pomodoroSecondsRef.current = pomodoroSeconds;
 
   const activeStudyRequest = useCallback(
     async (endpoint, body = {}, method = "POST") => {
@@ -584,6 +615,12 @@ export function TimerProvider({ children }) {
       return;
     }
 
+    // This runs directly from the Start gesture so browsers can show the
+    // notification permission prompt before the app is backgrounded.
+    void requestTimerNotificationPermission().then((allowed) => {
+      if (allowed) setTimerNotificationsAllowed(true);
+    });
+
     /*
      * Start the local clock immediately. The API registration happens in
      * parallel so network latency is not visible as a delay after pressing
@@ -603,6 +640,7 @@ export function TimerProvider({ children }) {
       simpleSessionStartedAtRef.current = startedAt;
     }
     setTimerMode("simple");
+    setTimerNotificationActive(true);
     setSimpleRunning(true);
 
     try {
@@ -634,6 +672,8 @@ export function TimerProvider({ children }) {
         simpleStartedAtRef.current = null;
         setSimpleSeconds(currentElapsed);
         setSimpleRunning(false);
+        setTimerNotificationActive(false);
+        void closeTimerNotification(timerOwnerIdRef.current);
         return false;
       }
 
@@ -662,14 +702,18 @@ export function TimerProvider({ children }) {
       ? getSimpleElapsedSeconds()
       : simpleBaseRef.current;
 
+    const sessionStartedAt = simpleSessionStartedAtRef.current;
+    simpleSessionStartedAtRef.current = null;
+    setTimerNotificationActive(false);
+    void closeTimerNotification(timerOwnerIdRef.current);
     setSimpleRunning(false);
     simpleStartedAtRef.current = null;
     const stopResult = await stopActiveStudy({
       save: true,
       duration: finalSeconds,
       type: "Regular Timer",
-      startedAt: simpleSessionStartedAtRef.current
-        ? new Date(simpleSessionStartedAtRef.current).toISOString()
+      startedAt: sessionStartedAt
+        ? new Date(sessionStartedAt).toISOString()
         : null,
     });
     if (stopResult?.ok) await refreshFromServer();
@@ -680,6 +724,8 @@ export function TimerProvider({ children }) {
   }, [getSimpleElapsedSeconds, refreshFromServer, stopActiveStudy]);
 
   const resetSimpleTimer = useCallback(() => {
+    setTimerNotificationActive(false);
+    void closeTimerNotification(timerOwnerIdRef.current);
     setSimpleRunning(false);
     simpleStartedAtRef.current = null;
     simpleSessionStartedAtRef.current = null;
@@ -692,6 +738,10 @@ export function TimerProvider({ children }) {
     if (pomodoroRunningRef.current || simpleRunningRef.current) {
       return;
     }
+
+    void requestTimerNotificationPermission().then((allowed) => {
+      if (allowed) setTimerNotificationsAllowed(true);
+    });
 
     if (pomodoroModeRef.current === "study") {
       const result = await startActivePomodoroStudy();
@@ -706,6 +756,7 @@ export function TimerProvider({ children }) {
     }
 
     setTimerMode("pomodoro");
+    setTimerNotificationActive(true);
     setPomodoroRunning(true);
     return true;
   }, [pomodoroSeconds, startActivePomodoroStudy]);
@@ -735,6 +786,8 @@ export function TimerProvider({ children }) {
   }, [pauseActiveStudy, pomodoroSettings.study]);
 
   const resetPomodoro = useCallback(() => {
+    setTimerNotificationActive(false);
+    void closeTimerNotification(timerOwnerIdRef.current);
     setPomodoroRunning(false);
     pomodoroEndAtRef.current = null;
     pomodoroSessionStartedAtRef.current = null;
@@ -744,6 +797,8 @@ export function TimerProvider({ children }) {
   }, [pomodoroSettings.study, stopActiveStudy]);
 
   const completePomodoro = useCallback(async () => {
+    setTimerNotificationActive(false);
+    void closeTimerNotification(timerOwnerIdRef.current);
     setPomodoroRunning(false);
     pomodoroEndAtRef.current = null;
     const stopResult = await stopActiveStudy({
@@ -929,6 +984,59 @@ export function TimerProvider({ children }) {
 
     return () => window.clearInterval(interval);
   }, [pomodoroRunning]);
+
+  // Keep one persistent notification visible while a timer is running or
+  // paused. The timer itself is calculated from timestamps, so its display
+  // remains accurate across background timer throttling whenever the browser
+  // allows these notification refreshes to run.
+  useEffect(() => {
+    if (!timerNotificationActive || !timerNotificationsAllowed) {
+      return undefined;
+    }
+
+    const publish = () => {
+      if (!timerNotificationActiveRef.current) return;
+
+      const isPomodoro = timerModeRef.current === "pomodoro";
+      const running = isPomodoro
+        ? pomodoroRunningRef.current
+        : simpleRunningRef.current;
+      const totalSeconds = isPomodoro
+        ? running && pomodoroEndAtRef.current
+          ? Math.max(0, Math.ceil((pomodoroEndAtRef.current - Date.now()) / 1000))
+          : pomodoroSecondsRef.current
+        : running
+          ? getSimpleElapsedSeconds()
+          : simpleBaseRef.current;
+      const modeName = isPomodoro
+        ? `${pomodoroModeRef.current === "study" ? "Study" : "Break"} pomodoro`
+        : "Study timer";
+      const state = running ? "Running" : "Paused";
+      const direction = isPomodoro ? "Remaining" : "Elapsed";
+
+      void showTimerNotification({
+        title: `${modeName} · ${state}`,
+        body: `${direction} ${formatNotificationTime(totalSeconds)}`,
+        state: running ? "running" : "paused",
+        ownerId: timerOwnerIdRef.current,
+      });
+    };
+
+    publish();
+    const isRunning = timerMode === "pomodoro" ? pomodoroRunning : simpleRunning;
+    if (!isRunning) return undefined;
+
+    const interval = window.setInterval(publish, 15000);
+    return () => window.clearInterval(interval);
+  }, [
+    getSimpleElapsedSeconds,
+    pomodoroMode,
+    pomodoroRunning,
+    simpleRunning,
+    timerMode,
+    timerNotificationsAllowed,
+    timerNotificationActive,
+  ]);
 
   useEffect(() => {
     if (!simpleRunning && !pomodoroRunning) {
