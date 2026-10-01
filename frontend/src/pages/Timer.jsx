@@ -42,24 +42,128 @@ function formatShortTime(totalSeconds) {
 }
 
 const MOTIVATIONAL_QUOTES = [
-  { text: "Every concept you master today makes the next problem easier to face.", author: "Study note" },
-  { text: "A focused hour of revision can turn confusion into confidence.", author: "Study note" },
-  { text: "Your preparation is built in the quiet sessions when nobody is watching.", author: "Study note" },
-  { text: "Learn the reason behind each formula; understanding travels to new questions.", author: "Study note" },
-  { text: "A mock test is feedback, not a verdict. Review every missed question.", author: "Study note" },
-  { text: "Strong fundamentals make unfamiliar problems approachable.", author: "Study note" },
-  { text: "Use every wrong answer to find the concept worth revising next.", author: "Study note" },
-  { text: "Small, consistent study sessions add up to a syllabus you can trust.", author: "Study note" },
-  { text: "The GATE paper rewards clear concepts and calm problem solving.", author: "Study note" },
-  { text: "Practice the method until it is clear, then repeat until recall is quick.", author: "Study note" },
-  { text: "One topic understood well is progress you can carry into the exam hall.", author: "Study note" },
-  { text: "You do not need to finish everything today. Make honest progress on the next topic.", author: "Study note" },
-  { text: "Plan your revision, solve questions, review mistakes, and begin again tomorrow.", author: "Study note" },
-  { text: "A calm, prepared mind can find a path through a difficult question.", author: "Study note" },
-  { text: "Today’s practice is building the problem-solving skills your career will use.", author: "Study note" },
-  { text: "Take a planned break when you need one; sustainable focus beats burnout.", author: "Study note" },
-  { text: "Your rank is one goal. The knowledge you build stays useful long after the exam.", author: "Study note" },
-  { text: "Show up for the study block you planned. That is how long-term goals move forward.", author: "Study note" },
+  // Attributions checked against the authors' works or institutional records.
+   { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+
+  { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+
+  { text: "Great things are done by a series of small things brought together.", author: "Vincent van Gogh" },
+
+  { text: "The future depends on what you do today.", author: "Mahatma Gandhi" },
+
+  { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe" },
+
+  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+
+  { text: "Hard work beats talent when talent doesn't work hard.", author: "Tim Notke" },
+
+  { text: "Success usually comes to those who are too busy to be looking for it.", author: "Henry David Thoreau" },
+
+  { text: "The difference between ordinary and extraordinary is that little extra.", author: "Jimmy Johnson" },
+
+  { text: "If you want to achieve greatness, stop asking for permission.", author: "Unknown" },
+
+  { text: "Don't limit your challenges. Challenge your limits.", author: "Jerry Dunn" },
+
+  { text: "The pain of discipline is far less than the pain of regret.", author: "Unknown" },
+
+  { text: "A little progress each day adds up to big results.", author: "Unknown" },
+
+  { text: "Success is walking from failure to failure with no loss of enthusiasm.", author: "Winston Churchill" },
+
+  { text: "Your limitation—it's only your imagination.", author: "Unknown" },
+
+  { text: "Push yourself, because no one else is going to do it for you.", author: "Unknown" },
+
+  { text: "Don't stop when you're tired. Stop when you're done.", author: "Unknown" },
+
+  { text: "The harder you work for something, the greater you'll feel when you achieve it.", author: "Unknown" },
+
+  { text: "Doubt kills more dreams than failure ever will.", author: "Suzy Kassem" },
+
+  { text: "Success is liking yourself, liking what you do, and liking how you do it.", author: "Maya Angelou" },
+
+  { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+
+  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+
+  { text: "Do something today that your future self will thank you for.", author: "Sean Patrick Flanery" },
+
+  { text: "The only person you are destined to become is the person you decide to be.", author: "Ralph Waldo Emerson" },
+
+  { text: "Don't be afraid to give up the good to go for the great.", author: "John D. Rockefeller" },
+
+  { text: "Success is not about being the best. It is about being better than you were yesterday.", author: "Unknown" },
+
+  { text: "Focus on the step in front of you, not the whole staircase.", author: "Unknown" },
+
+  { text: "Consistency is what transforms average into excellence.", author: "Unknown" },
+
+  { text: "One day or day one. You decide.", author: "Paulo Coelho" },
+
+  { text: "Your dreams don't work unless you do.", author: "John C. Maxwell" },
+
+  { text: "Work hard in silence. Let your success make the noise.", author: "Frank Ocean" },
+
+  { text: "The road to success and the road to failure are almost exactly the same. The difference is in how long you keep walking.", author: "Unknown" },
+
+  { text: "Don't compare your beginning to someone else's middle.", author: "Jon Acuff" },
+
+  { text: "The greatest glory in living lies not in never falling, but in rising every time we fall.", author: "Nelson Mandela" },
+
+  { text: "You are capable of more than you know.", author: "Unknown" },
+
+  { text: "Difficult roads often lead to beautiful destinations.", author: "Zig Ziglar" },
+
+  { text: "The key is not to prioritize what's on your schedule, but to schedule your priorities.", author: "Stephen Covey" },
+
+  { text: "If you can dream it, you can achieve it.", author: "Zig Ziglar" },
+
+  { text: "Champions keep playing until they get it right.", author: "Billie Jean King" },
+
+  { text: "The will to win means nothing without the will to prepare.", author: "Juma Ikangaa" },
+
+  { text: "You have to fight through some bad days in order to earn some of the best days of your life.", author: "Unknown" },
+
+  { text: "Every accomplishment starts with the decision to try.", author: "John F. Kennedy" },
+
+  { text: "Don't count the days. Make the days count.", author: "Muhammad Ali" },
+
+  { text: "I don't believe in motivation. I believe in discipline.", author: "Virat Kohli" },
+
+  { text: "You have to be mentally strong and believe in yourself.", author: "Virat Kohli" },
+
+  { text: "Self-belief and hard work will always earn you success.", author: "Virat Kohli" },
+
+  { text: "Whatever you do, give it your 100 percent and don't worry about the result.", author: "Virat Kohli" },
+
+  { text: "I like to be myself, and I don't pretend.", author: "Virat Kohli" },
+
+  { text: "You have to accept failure to get better.", author: "Virat Kohli" },
+
+  { text: "Every time I go out there, I want to give my best and make a difference.", author: "Virat Kohli" },
+
+  { text: "The hunger to improve has to remain, no matter how much you achieve.", author: "Virat Kohli" },
+
+  { text: "If you stay focused on your process, the results will take care of themselves.", author: "Virat Kohli" },
+
+  { text: "Fitness is not about being better than someone else. It's about being better than you used to be.", author: "Virat Kohli" },
+
+  { text: "You need to believe in yourself when nobody else does.", author: "Virat Kohli" },
+
+  { text: "Keep working hard, keep believing, and keep improving every single day.", author: "Virat Kohli" },
+
+  { text: "The biggest motivation is to keep getting better at what you do.", author: "Virat Kohli" },
+
+  { text: "Don't let one bad day define your journey.", author: "Unknown" }
 ];
 
 function Timer() {
