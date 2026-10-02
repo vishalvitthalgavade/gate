@@ -1136,3 +1136,104 @@ html.dark .gate-skeleton::after {
     width: min(84vw, 300px) !important;
   }
 }
+
+/* Phones may report a desktop-sized CSS width in landscape (high-DPI
+   devices), so key the compact layout off touch input and viewport height,
+   not only the 767px width breakpoint. The OS still decides whether the
+   screen itself rotates. */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+  .gate-mobile-header {
+    display: flex !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 0 10px !important;
+  }
+
+  .gate-mobile-header h1 {
+    font-size: 13px !important;
+  }
+
+  .gate-mobile-header p {
+    font-size: 9px !important;
+  }
+
+  .gate-sidebar {
+    width: min(82vw, 310px) !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    z-index: 70 !important;
+  }
+
+  .gate-sidebar[class~="-translate-x-full"] {
+    transform: translateX(-100%) !important;
+  }
+
+  .gate-sidebar[class~="translate-x-0"] {
+    transform: translateX(0) !important;
+  }
+
+  .gate-app-shell > div[class~="md:ml-[272px]"] {
+    margin-left: 0 !important;
+  }
+
+  .gate-main-content {
+    min-height: calc(100dvh - 48px) !important;
+    padding: 8px !important;
+  }
+
+  .timer-landscape-content {
+    min-height: 0 !important;
+    height: auto !important;
+    padding-top: 0 !important;
+  }
+
+  .timer-landscape-content > div {
+    padding-top: 2.4rem !important;
+  }
+
+  .timer-landscape-content .gate-timer-digits {
+    max-width: 100%;
+    white-space: nowrap;
+    font-size: clamp(2.5rem, 12vw, 6rem) !important;
+    line-height: .95 !important;
+    letter-spacing: -.05em;
+  }
+
+  .timer-landscape-content .timer-action-row {
+    margin: .65rem auto 0 !important;
+  }
+
+  :fullscreen {
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    padding: .5rem !important;
+  }
+
+  :fullscreen .timer-landscape-content {
+    min-height: 0 !important;
+  }
+
+  :fullscreen .timer-landscape-content {
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  :fullscreen .timer-landscape-content > div {
+    width: 100%;
+    padding: 2.8rem .5rem .5rem !important;
+  }
+
+  :fullscreen .timer-landscape-content .gate-timer-digits {
+    font-size: clamp(2.5rem, 12vw, 6rem) !important;
+  }
+
+  :fullscreen .timer-landscape-content .timer-action-row > button {
+    min-height: 38px !important;
+    padding: .45rem .6rem !important;
+  }
+}

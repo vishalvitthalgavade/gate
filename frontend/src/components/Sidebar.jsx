@@ -18,7 +18,11 @@ import { useEffect, useState } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { useTimer } from "../context/TimerContext";
-import { getGateDaysLeft } from "../data/exam";
+import {
+  GATE_EXAM_DATE_CHANGE_EVENT,
+  getGateDaysLeft,
+  getGateExamYear,
+} from "../data/exam";
 import { NavLink, useNavigate } from "react-router-dom";
 
 function formatSidebarTime(totalSeconds) {
@@ -67,6 +71,8 @@ function Sidebar({ isOpen, setIsOpen }) {
     }
 
     updateDaysLeft();
+    window.addEventListener(GATE_EXAM_DATE_CHANGE_EVENT, updateDaysLeft);
+    window.addEventListener("storage", updateDaysLeft);
 
     // Keep the counter automatically updated.
     const interval = setInterval(
@@ -74,7 +80,11 @@ function Sidebar({ isOpen, setIsOpen }) {
       60 * 60 * 1000
     );
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(GATE_EXAM_DATE_CHANGE_EVENT, updateDaysLeft);
+      window.removeEventListener("storage", updateDaysLeft);
+    };
   }, []);
 
   const menuItems = [
@@ -238,7 +248,7 @@ function Sidebar({ isOpen, setIsOpen }) {
                     }
                   `}
                 >
-                  GATE 2027
+                  GATE {getGateExamYear()}
                 </p>
 
                 <p

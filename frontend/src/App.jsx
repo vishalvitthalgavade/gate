@@ -29,7 +29,11 @@ import { StudyProvider } from "./context/StudyContext";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { TimerProvider } from "./context/TimerContext";
-import { getGateDaysLeft } from "./data/exam";
+import {
+  GATE_EXAM_DATE_CHANGE_EVENT,
+  getGateDaysLeft,
+  getGateExamYear,
+} from "./data/exam";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -48,13 +52,19 @@ function App() {
     }
 
     updateDaysLeft();
+    window.addEventListener(GATE_EXAM_DATE_CHANGE_EVENT, updateDaysLeft);
+    window.addEventListener("storage", updateDaysLeft);
 
     const interval = setInterval(
       updateDaysLeft,
       60 * 60 * 1000
     );
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(GATE_EXAM_DATE_CHANGE_EVENT, updateDaysLeft);
+      window.removeEventListener("storage", updateDaysLeft);
+    };
   }, []);
 
   return (
@@ -168,7 +178,7 @@ function App() {
 
                             <div className="text-right leading-none">
                               <p className="text-[9px] font-semibold uppercase tracking-wider text-purple-300">
-                                GATE 2027
+                                GATE {getGateExamYear()}
                               </p>
 
                               <p className="mt-0.5 text-[8px] text-zinc-500">

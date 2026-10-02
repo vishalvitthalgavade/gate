@@ -10,12 +10,20 @@ import {
   Save,
   CheckCircle,
   AlertCircle,
+  CalendarDays,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
+import {
+  DEFAULT_GATE_EXAM_DATE,
+  getGateExamDate,
+  getGateDaysLeft,
+  getGateExamYear,
+  setGateExamDate,
+} from "../data/exam";
 
 export default function Settings() {
   const {
@@ -50,6 +58,21 @@ export default function Settings() {
 
   const [profileError, setProfileError] =
     useState("");
+
+  const [examDate, setExamDate] = useState(() => getGateExamDate());
+  const [examDateMessage, setExamDateMessage] = useState("");
+  const [examDateError, setExamDateError] = useState("");
+
+  function handleExamDateSave(event) {
+    event.preventDefault();
+    setExamDateMessage("");
+    setExamDateError("");
+    if (!setGateExamDate(examDate)) {
+      setExamDateError("Choose a valid date. Your countdown has not been changed.");
+      return;
+    }
+    setExamDateMessage("Countdown date saved and updated across the app.");
+  }
 
   /*
   ====================================================
@@ -330,6 +353,83 @@ export default function Settings() {
             </div>
           </section>
         )}
+
+        {/* ====================================================
+            EXAM COUNTDOWN
+        ==================================================== */}
+
+        <section className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardClass}`}>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="rounded-xl bg-purple-500/10 p-2.5 text-purple-400">
+              <CalendarDays size={21} />
+            </div>
+            <div>
+              <h2 className="font-semibold">Exam countdown</h2>
+              <p className={`text-xs ${isDark ? "text-zinc-500" : "text-gray-500"}`}>
+                Set the date shown in the sidebar and mobile header.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleExamDateSave}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="min-w-0 flex-1">
+                <label
+                  htmlFor="gate-exam-date"
+                  className={`mb-2 block text-xs font-medium ${isDark ? "text-zinc-400" : "text-gray-500"}`}
+                >
+                  Countdown date
+                </label>
+                <input
+                  id="gate-exam-date"
+                  type="date"
+                  value={examDate}
+                  onChange={(event) => {
+                    setExamDate(event.target.value);
+                    setExamDateMessage("");
+                    setExamDateError("");
+                  }}
+                  required
+                  className={`min-h-11 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 ${inputClass}`}
+                />
+              </div>
+              <button
+                type="submit"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-purple-700"
+              >
+                <Save size={17} /> Save date
+              </button>
+              {examDate !== DEFAULT_GATE_EXAM_DATE && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExamDate(DEFAULT_GATE_EXAM_DATE);
+                    if (setGateExamDate(DEFAULT_GATE_EXAM_DATE)) {
+                      setExamDateError("");
+                      setExamDateMessage("Default countdown date restored.");
+                    }
+                  }}
+                  className={`min-h-11 rounded-xl border px-4 py-3 text-sm font-medium transition ${isDark ? "border-zinc-700 text-zinc-300 hover:bg-zinc-800" : "border-gray-200 text-gray-700 hover:bg-gray-100"}`}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            <p className={`mt-3 text-xs ${isDark ? "text-zinc-500" : "text-gray-500"}`}>
+              Current countdown: {getGateDaysLeft(undefined, examDate)} days until GATE {getGateExamYear(examDate)}.
+            </p>
+            {examDateMessage && (
+              <p role="status" className="mt-3 flex items-center gap-2 text-sm text-green-500">
+                <CheckCircle size={16} /> {examDateMessage}
+              </p>
+            )}
+            {examDateError && (
+              <p role="alert" className="mt-3 flex items-center gap-2 text-sm text-red-400">
+                <AlertCircle size={16} /> {examDateError}
+              </p>
+            )}
+          </form>
+        </section>
 
         {/* ====================================================
             PROFILE
