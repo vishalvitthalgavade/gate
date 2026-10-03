@@ -226,7 +226,7 @@ function Sidebar({ isOpen, setIsOpen }) {
 
           {/* GATE Days Counter */}
           <div
-            className={`
+            className={`gate-sidebar-countdown
               mt-4 rounded-xl border px-4 py-3
 
               ${
@@ -494,8 +494,8 @@ function Sidebar({ isOpen, setIsOpen }) {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className={`
-              mb-2 flex w-full items-center
+              className={`gate-sidebar-theme-toggle
+                mb-2 flex w-full items-center
               justify-between rounded-lg px-3 py-3
               text-sm font-medium transition
 
@@ -551,7 +551,7 @@ function Sidebar({ isOpen, setIsOpen }) {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className={`
+            className={`gate-sidebar-logout
               flex w-full items-center gap-3
               rounded-lg px-3 py-2.5
               text-sm font-medium transition
@@ -568,7 +568,7 @@ function Sidebar({ isOpen, setIsOpen }) {
           </button>
 
           <p
-            className={`
+            className={`gate-sidebar-footer-label
               mt-3 text-center text-xs
               ${
                 theme === "dark"

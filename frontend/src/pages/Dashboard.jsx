@@ -625,7 +625,7 @@ function Dashboard() {
                 ariaLabel="Daily study goal"
                 value={goals.daily}
                 onChange={(value) => setGoals((current) => ({ ...current, daily: Number(value) }))}
-                options={[30, 60, 90, 120, 180, 240].map((minutes) => ({
+                options={[30, 60, 90, 120, 180, 240 , 300,420,480,600].map((minutes) => ({
                   value: minutes * 60,
                   label: `${minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`} daily`,
                 }))}
@@ -635,7 +635,7 @@ function Dashboard() {
                 ariaLabel="Weekly study goal"
                 value={goals.weekly}
                 onChange={(value) => setGoals((current) => ({ ...current, weekly: Number(value) }))}
-                options={[7, 10, 14, 18, 21, 28].map((hours) => ({
+                options={[7, 10, 14, 18, 21, 28,36,42,48,50].map((hours) => ({
                   value: hours * 60 * 60,
                   label: `${hours}h weekly`,
                 }))}

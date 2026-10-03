@@ -25,6 +25,15 @@ function getTimerOwnerId() {
   try {
     const existing = sessionStorage.getItem(TIMER_OWNER_KEY);
     if (existing) return existing;
+    const params = new URLSearchParams(window.location.search);
+    const notificationOwner = params.get("timerOwner");
+    if (
+      (params.get("timerAction") === "pause" || params.get("timerAction") === "resume") &&
+      notificationOwner
+    ) {
+      sessionStorage.setItem(TIMER_OWNER_KEY, notificationOwner);
+      return notificationOwner;
+    }
     const id = crypto?.randomUUID
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -241,6 +250,17 @@ export function TimerProvider({ children }) {
   const userId = user?.id || null;
   const timerOwnerIdRef = useRef(getTimerOwnerId());
   const timerOwnerLabelRef = useRef(getTimerOwnerLabel());
+  const notificationLaunchActionRef = useRef(null);
+  if (!notificationLaunchActionRef.current) {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("timerAction");
+    if (action === "pause" || action === "resume") {
+      notificationLaunchActionRef.current = {
+        action,
+        ownerId: params.get("timerOwner"),
+      };
+    }
+  }
 
   /*
    * Computed exactly once, on the first render, from
@@ -282,6 +302,10 @@ export function TimerProvider({ children }) {
   const [simpleRunning, setSimpleRunning] = useState(
     init.simple.running
   );
+  const [simplePausedAt, setSimplePausedAt] = useState(() => {
+    if (init.simple.running || !init.saved?.simpleSessionStartedAt) return null;
+    return Number(init.saved.simplePausedAt) || Date.now();
+  });
 
   const [pomodoroMode, setPomodoroMode] = useState(
     init.pomodoro.mode
@@ -292,16 +316,23 @@ export function TimerProvider({ children }) {
   const [pomodoroRunning, setPomodoroRunning] = useState(
     init.pomodoro.running
   );
+  const [pomodoroPausedAt, setPomodoroPausedAt] = useState(() => {
+    if (init.pomodoro.running || !init.saved?.pomodoroSessionStartedAt) return null;
+    return Number(init.saved.pomodoroPausedAt) || Date.now();
+  });
   const [timerNotificationActive, setTimerNotificationActive] = useState(
     Boolean(
       init.simple.running || init.pomodoro.running ||
       init.saved?.simpleSessionStartedAt ||
-      init.saved?.pomodoroSessionStartedAt
+      init.saved?.pomodoroSessionStartedAt ||
+      init.saved?.simplePausedAt ||
+      init.saved?.pomodoroPausedAt
     )
   );
   const [timerNotificationsAllowed, setTimerNotificationsAllowed] = useState(
     () => typeof Notification !== "undefined" && Notification.permission === "granted"
   );
+  const [notificationActionSequence, setNotificationActionSequence] = useState(0);
   const timerNotificationActiveRef = useRef(timerNotificationActive);
   const [completedPomodoros, setCompletedPomodoros] = useState(
     init.saved?.completedPomodoros || 0
@@ -331,6 +362,8 @@ export function TimerProvider({ children }) {
   const pomodoroModeRef = useRef(pomodoroMode);
   const pomodoroRunningRef = useRef(pomodoroRunning);
   const simpleRunningRef = useRef(simpleRunning);
+  const simplePausedAtRef = useRef(simplePausedAt);
+  const pomodoroPausedAtRef = useRef(pomodoroPausedAt);
   const completedPomodorosRef = useRef(completedPomodoros);
   const selectedSubjectRef = useRef(selectedSubject);
   const selectedTopicRef = useRef(selectedTopic);
@@ -339,11 +372,14 @@ export function TimerProvider({ children }) {
   const pomodoroSecondsRef = useRef(pomodoroSeconds);
   const restoredRef = useRef(false);
   const simpleStartInFlightRef = useRef(false);
+  const autoSaveInFlightRef = useRef(null);
   const timerChannelRef = useRef(null);
 
   pomodoroModeRef.current = pomodoroMode;
   pomodoroRunningRef.current = pomodoroRunning;
   simpleRunningRef.current = simpleRunning;
+  simplePausedAtRef.current = simplePausedAt;
+  pomodoroPausedAtRef.current = pomodoroPausedAt;
   completedPomodorosRef.current = completedPomodoros;
   selectedSubjectRef.current = selectedSubject;
   selectedTopicRef.current = selectedTopic;
@@ -607,6 +643,14 @@ export function TimerProvider({ children }) {
   }, [activeStudyRequest, addSession]);
 
   const startSimpleTimer = useCallback(async () => {
+    if (autoSaveInFlightRef.current) {
+      try {
+        await autoSaveInFlightRef.current;
+      } catch {
+        // A save failure should not prevent the user from starting again.
+      }
+    }
+
     if (simpleRunningRef.current) {
       return;
     }
@@ -626,7 +670,7 @@ export function TimerProvider({ children }) {
      * parallel so network latency is not visible as a delay after pressing
      * Start. If registration fails, roll the local start back.
      */
-    const base = simpleSeconds;
+    const base = simpleBaseRef.current;
     const startedAt = Date.now();
 
     // Mark registration as in-flight so the one-time server reconciliation
@@ -636,6 +680,7 @@ export function TimerProvider({ children }) {
 
     simpleBaseRef.current = base;
     simpleStartedAtRef.current = startedAt;
+    setSimplePausedAt(null);
     if (!simpleSessionStartedAtRef.current) {
       simpleSessionStartedAtRef.current = startedAt;
     }
@@ -681,7 +726,7 @@ export function TimerProvider({ children }) {
     } finally {
       simpleStartInFlightRef.current = false;
     }
-  }, [simpleSeconds, startActiveSimpleStudy]);
+  }, [startActiveSimpleStudy]);
 
   const pauseSimpleTimer = useCallback(() => {
     if (!simpleRunningRef.current) {
@@ -694,20 +739,28 @@ export function TimerProvider({ children }) {
 
     setSimpleSeconds(elapsed);
     setSimpleRunning(false);
+    setSimplePausedAt(Date.now());
     pauseActiveStudy(elapsed);
   }, [getSimpleElapsedSeconds, pauseActiveStudy]);
 
   const stopSimpleTimer = useCallback(async () => {
+    if (!simpleRunningRef.current && !simpleSessionStartedAtRef.current) {
+      return;
+    }
+
     const finalSeconds = simpleRunningRef.current
       ? getSimpleElapsedSeconds()
       : simpleBaseRef.current;
 
     const sessionStartedAt = simpleSessionStartedAtRef.current;
     simpleSessionStartedAtRef.current = null;
+    setSimplePausedAt(null);
     setTimerNotificationActive(false);
     void closeTimerNotification(timerOwnerIdRef.current);
     setSimpleRunning(false);
     simpleStartedAtRef.current = null;
+    simpleBaseRef.current = 0;
+    setSimpleSeconds(0);
     const stopResult = await stopActiveStudy({
       save: true,
       duration: finalSeconds,
@@ -717,10 +770,7 @@ export function TimerProvider({ children }) {
         : null,
     });
     if (stopResult?.ok) await refreshFromServer();
-
-    simpleSessionStartedAtRef.current = null;
-    setSimpleSeconds(0);
-    simpleBaseRef.current = 0;
+    return stopResult;
   }, [getSimpleElapsedSeconds, refreshFromServer, stopActiveStudy]);
 
   const resetSimpleTimer = useCallback(() => {
@@ -729,12 +779,21 @@ export function TimerProvider({ children }) {
     setSimpleRunning(false);
     simpleStartedAtRef.current = null;
     simpleSessionStartedAtRef.current = null;
+    setSimplePausedAt(null);
     simpleBaseRef.current = 0;
     setSimpleSeconds(0);
     stopActiveStudy({ save: false });
   }, [stopActiveStudy]);
 
   const startPomodoro = useCallback(async () => {
+    if (autoSaveInFlightRef.current) {
+      try {
+        await autoSaveInFlightRef.current;
+      } catch {
+        // A save failure should not prevent the user from starting again.
+      }
+    }
+
     if (pomodoroRunningRef.current || simpleRunningRef.current) {
       return;
     }
@@ -748,18 +807,18 @@ export function TimerProvider({ children }) {
       if (!result.ok) return false;
     }
 
-    pomodoroEndAtRef.current =
-      Date.now() + pomodoroSeconds * 1000;
+    pomodoroEndAtRef.current = Date.now() + pomodoroSecondsRef.current * 1000;
 
     if (pomodoroModeRef.current === "study" && !pomodoroSessionStartedAtRef.current) {
       pomodoroSessionStartedAtRef.current = Date.now();
     }
 
     setTimerMode("pomodoro");
+    setPomodoroPausedAt(null);
     setTimerNotificationActive(true);
     setPomodoroRunning(true);
     return true;
-  }, [pomodoroSeconds, startActivePomodoroStudy]);
+  }, [startActivePomodoroStudy]);
 
   const pausePomodoro = useCallback(() => {
     if (!pomodoroRunningRef.current) {
@@ -777,6 +836,7 @@ export function TimerProvider({ children }) {
     pomodoroEndAtRef.current = null;
     setPomodoroSeconds(remaining);
     setPomodoroRunning(false);
+    setPomodoroPausedAt(Date.now());
 
     if (pomodoroModeRef.current === "study") {
       pauseActiveStudy(
@@ -791,6 +851,7 @@ export function TimerProvider({ children }) {
     setPomodoroRunning(false);
     pomodoroEndAtRef.current = null;
     pomodoroSessionStartedAtRef.current = null;
+    setPomodoroPausedAt(null);
     setPomodoroMode("study");
     setPomodoroSeconds(pomodoroSettings.study * 60);
     stopActiveStudy({ save: false });
@@ -798,6 +859,7 @@ export function TimerProvider({ children }) {
 
   const completePomodoro = useCallback(async () => {
     setTimerNotificationActive(false);
+    setPomodoroPausedAt(null);
     void closeTimerNotification(timerOwnerIdRef.current);
     setPomodoroRunning(false);
     pomodoroEndAtRef.current = null;
@@ -859,6 +921,100 @@ export function TimerProvider({ children }) {
       setPomodoroSeconds(pomodoroSettings.study * 60);
     }
   }, [pomodoroSettings.shortBreak, pomodoroSettings.study, stopActiveStudy]);
+
+  // Auto-save a session only after it has remained paused for five minutes.
+  // Resuming clears the pause timestamp and cancels the pending timeout.
+  useEffect(() => {
+    if (
+      timerMode !== "simple" ||
+      simpleRunning ||
+      !simplePausedAt ||
+      !simpleSessionStartedAtRef.current
+    ) return undefined;
+
+    const pauseStartedAt = simplePausedAt;
+    const sessionStartedAt = simpleSessionStartedAtRef.current;
+    const delay = Math.max(0, 5 * 60 * 1000 - (Date.now() - pauseStartedAt));
+    const timeout = window.setTimeout(() => {
+      if (
+        simpleRunningRef.current ||
+        simplePausedAtRef.current !== pauseStartedAt ||
+        simpleSessionStartedAtRef.current !== sessionStartedAt ||
+        autoSaveInFlightRef.current
+      ) return;
+
+      const savePromise = stopSimpleTimer();
+      autoSaveInFlightRef.current = savePromise;
+      void savePromise.then(
+        () => { if (autoSaveInFlightRef.current === savePromise) autoSaveInFlightRef.current = null; },
+        () => { if (autoSaveInFlightRef.current === savePromise) autoSaveInFlightRef.current = null; }
+      );
+    }, delay);
+
+    return () => window.clearTimeout(timeout);
+  }, [simplePausedAt, simpleRunning, stopSimpleTimer, timerMode]);
+
+  useEffect(() => {
+    if (
+      timerMode !== "pomodoro" ||
+      pomodoroRunning ||
+      !pomodoroPausedAt
+    ) return undefined;
+
+    const pauseStartedAt = pomodoroPausedAt;
+    const delay = Math.max(0, 5 * 60 * 1000 - (Date.now() - pauseStartedAt));
+    const timeout = window.setTimeout(() => {
+      if (
+        pomodoroRunningRef.current ||
+        pomodoroPausedAtRef.current !== pauseStartedAt ||
+        autoSaveInFlightRef.current
+      ) return;
+
+      const pausedMode = pomodoroModeRef.current;
+      const remaining = pomodoroSecondsRef.current;
+      const sessionStartedAt = pomodoroSessionStartedAtRef.current;
+      const studiedSeconds = pausedMode === "study"
+        ? Math.max(0, pomodoroSettings.study * 60 - remaining)
+        : 0;
+
+      setPomodoroPausedAt(null);
+      setPomodoroRunning(false);
+      pomodoroEndAtRef.current = null;
+      pomodoroSessionStartedAtRef.current = null;
+      setTimerNotificationActive(false);
+      void closeTimerNotification(timerOwnerIdRef.current);
+      setPomodoroMode("study");
+      setPomodoroSeconds(pomodoroSettings.study * 60);
+
+      const savePromise = Promise.resolve().then(async () => {
+        if (pausedMode === "study" && studiedSeconds > 0) {
+          const result = await stopActiveStudy({
+            save: true,
+            duration: studiedSeconds,
+            type: "Pomodoro",
+            startedAt: sessionStartedAt
+              ? new Date(sessionStartedAt).toISOString()
+              : null,
+          });
+          if (result?.ok) await refreshFromServer();
+        }
+      });
+      autoSaveInFlightRef.current = savePromise;
+      void savePromise.then(
+        () => { if (autoSaveInFlightRef.current === savePromise) autoSaveInFlightRef.current = null; },
+        () => { if (autoSaveInFlightRef.current === savePromise) autoSaveInFlightRef.current = null; }
+      );
+    }, delay);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    pomodoroPausedAt,
+    pomodoroRunning,
+    pomodoroSettings.study,
+    refreshFromServer,
+    stopActiveStudy,
+    timerMode,
+  ]);
 
   const handleSubjectChange = useCallback((subject) => {
     setSelectedSubject(subject);
@@ -1026,7 +1182,7 @@ export function TimerProvider({ children }) {
     const isRunning = timerMode === "pomodoro" ? pomodoroRunning : simpleRunning;
     if (!isRunning) return undefined;
 
-    const interval = window.setInterval(publish, 15000);
+    const interval = window.setInterval(publish, 1000);
     return () => window.clearInterval(interval);
   }, [
     getSimpleElapsedSeconds,
@@ -1036,6 +1192,55 @@ export function TimerProvider({ children }) {
     timerMode,
     timerNotificationsAllowed,
     timerNotificationActive,
+    notificationActionSequence,
+  ]);
+
+  useEffect(() => {
+    const navigateToTimer = () => {
+      if (window.location.pathname === "/timer") return;
+      window.history.pushState({}, "", "/timer");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    };
+
+    const applyNotificationAction = (action, ownerId) => {
+      if (ownerId && ownerId !== timerOwnerIdRef.current) return;
+      setNotificationActionSequence((sequence) => sequence + 1);
+      navigateToTimer();
+
+      if (action === "pause") {
+        if (timerModeRef.current === "simple") pauseSimpleTimer();
+        else pausePomodoro();
+      } else if (action === "resume") {
+        if (timerModeRef.current === "simple") void startSimpleTimer();
+        else void startPomodoro();
+      }
+    };
+
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data?.type !== "GATE_TIMER_NOTIFICATION_ACTION") return;
+      applyNotificationAction(event.data.action, event.data.ownerId);
+    };
+
+    navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
+
+    const pendingLaunch = notificationLaunchActionRef.current;
+    if (pendingLaunch && !restoring) {
+      notificationLaunchActionRef.current = null;
+      const cleanUrl = `${window.location.pathname}${window.location.hash}`;
+      window.history.replaceState({}, "", cleanUrl);
+      applyNotificationAction(pendingLaunch.action, pendingLaunch.ownerId);
+    }
+
+    return () => {
+      navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
+    };
+  }, [
+    pausePomodoro,
+    pauseSimpleTimer,
+    restoring,
+    startPomodoro,
+    startSimpleTimer,
+    setNotificationActionSequence,
   ]);
 
   useEffect(() => {
@@ -1083,8 +1288,10 @@ export function TimerProvider({ children }) {
       simpleBase: simpleBaseRef.current,
       simpleStartedAt: simpleStartedAtRef.current,
       simpleSessionStartedAt: simpleSessionStartedAtRef.current,
+      simplePausedAt,
       pomodoroEndAt: pomodoroEndAtRef.current,
       pomodoroSessionStartedAt: pomodoroSessionStartedAtRef.current,
+      pomodoroPausedAt,
     });
   }, [
     completedPomodoros,
@@ -1094,9 +1301,11 @@ export function TimerProvider({ children }) {
     selectedSubject,
     selectedTopic,
     simpleRunning,
+    simplePausedAt,
     simpleSeconds,
     timerMode,
     userId,
+    pomodoroPausedAt,
   ]);
 
   /*
@@ -1321,8 +1530,12 @@ export function TimerProvider({ children }) {
     }
 
     restoredRef.current = false;
+    setTimerNotificationActive(false);
+    void closeTimerNotification(timerOwnerIdRef.current);
     setSimpleRunning(false);
+    setSimplePausedAt(null);
     setPomodoroRunning(false);
+    setPomodoroPausedAt(null);
     simpleStartedAtRef.current = null;
     simpleSessionStartedAtRef.current = null;
     pomodoroEndAtRef.current = null;

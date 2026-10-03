@@ -1164,6 +1164,42 @@ html.dark .gate-skeleton::after {
     z-index: 70 !important;
   }
 
+  .gate-sidebar-countdown,
+  .gate-sidebar-theme-toggle,
+  .gate-sidebar-logout,
+  .gate-sidebar-footer-label {
+    display: none !important;
+  }
+
+  .gate-sidebar > div:last-child {
+    padding: .5rem !important;
+  }
+
+  .gate-sidebar > div:last-child button:first-child {
+    margin: 0 !important;
+    justify-content: center !important;
+    padding: .55rem !important;
+  }
+
+  .gate-sidebar > div:last-child button:first-child > div:nth-child(2),
+  .gate-sidebar > div:last-child button:first-child > svg {
+    display: none !important;
+  }
+
+  .gate-sidebar > div:last-child button:first-child > div:first-child {
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    color: #a78bfa !important;
+    font-size: 0 !important;
+    font-weight: 600 !important;
+  }
+
+  .gate-sidebar > div:last-child button:first-child > div:first-child::after {
+    content: "Settings";
+    font-size: .8rem;
+  }
+
   .gate-sidebar[class~="-translate-x-full"] {
     transform: translateX(-100%) !important;
   }

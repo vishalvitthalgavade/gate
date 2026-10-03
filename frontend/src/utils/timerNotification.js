@@ -2,6 +2,14 @@ function getTimerNotificationTag(ownerId) {
   return `gate-study-timer-${ownerId || "default"}`;
 }
 
+const notificationVersions = new Map();
+
+function nextNotificationVersion(tag) {
+  const next = (notificationVersions.get(tag) || 0) + 1;
+  notificationVersions.set(tag, next);
+  return next;
+}
+
 export async function requestTimerNotificationPermission() {
   if (typeof Notification === "undefined") return false;
   if (Notification.permission === "granted") return true;
@@ -33,34 +41,48 @@ export async function showTimerNotification({ title, body, state, ownerId }) {
 
   const registration = await getServiceWorkerRegistration();
   const tag = getTimerNotificationTag(ownerId);
+  const version = nextNotificationVersion(tag);
   const options = {
     body,
     tag,
     icon: "/gate-192.png",
     badge: "/gate-192.png",
+    actions: [
+      { action: "pause", title: "Pause" },
+      { action: "resume", title: "Resume" },
+    ],
     renotify: false,
     requireInteraction: true,
     silent: true,
     timestamp: Date.now(),
-    data: { url: "/timer", state },
+    data: { url: "/timer", state, ownerId },
   };
 
   try {
     if (registration?.showNotification) {
-      const existing = registration.getNotifications
-        ? await registration.getNotifications({ tag })
-        : [];
-      existing.forEach((notification) => notification.close());
-      await registration.showNotification(title, options);
+      // Reuse a stable tag so pause/resume and timer refreshes replace the
+      // existing card instead of producing another notification.
+      if (notificationVersions.get(tag) !== version) return;
+      try {
+        await registration.showNotification(title, options);
+      } catch {
+        // Keep the notification usable on platforms that do not expose
+        // notification action buttons.
+        const { actions, ...basicOptions } = options;
+        await registration.showNotification(title, basicOptions);
+      }
       return;
     }
 
     // Some desktop browsers expose notifications without a service worker.
     if (typeof window !== "undefined" && !/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      if (notificationVersions.get(tag) !== version) return;
       window.__gateTimerNotifications ||= {};
       const previous = window.__gateTimerNotifications[ownerId || "default"];
       previous?.close();
-      window.__gateTimerNotifications[ownerId || "default"] = new Notification(title, options);
+      const windowOptions = { ...options };
+      delete windowOptions.actions;
+      window.__gateTimerNotifications[ownerId || "default"] = new Notification(title, windowOptions);
     }
   } catch {
     // Notification support varies by browser and installed-app mode.
@@ -68,8 +90,9 @@ export async function showTimerNotification({ title, body, state, ownerId }) {
 }
 
 export async function closeTimerNotification(ownerId) {
-  const registration = await getServiceWorkerRegistration();
   const tag = getTimerNotificationTag(ownerId);
+  nextNotificationVersion(tag);
+  const registration = await getServiceWorkerRegistration();
   try {
     const notifications = registration?.getNotifications
       ? await registration.getNotifications({ tag })

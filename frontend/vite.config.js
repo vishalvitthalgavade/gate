@@ -29,6 +29,7 @@ export default defineConfig({
       injectRegister: 'auto',
       workbox: {
         navigateFallbackDenylist: [/^\/api\//],
+        importScripts: ['/timer-notification-sw.js'],
       },
 
       manifest: {
@@ -38,8 +39,6 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        // Allow the installed PWA to follow the device's orientation.
-        orientation: 'any',
         background_color: '#0b1120',
         theme_color: '#0b1120'
       }
