@@ -99,6 +99,18 @@ function formatNotificationTime(totalSeconds) {
     .join(":");
 }
 
+function getNotificationLabel(value) {
+  if (typeof value !== "string") return "";
+  const label = value.trim();
+  if (!label || /^(undefined|null|no subject|no topic)$/i.test(label)) return "";
+  return label;
+}
+
+function truncateNotificationLabel(value, maxLength = 42) {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
 function playBrowserBeep() {
   try {
     const AudioContext =
@@ -1157,24 +1169,37 @@ export function TimerProvider({ children }) {
       const running = isPomodoro
         ? pomodoroRunningRef.current
         : simpleRunningRef.current;
-      const totalSeconds = isPomodoro
+      const isPomodoroBreak = isPomodoro && pomodoroModeRef.current !== "study";
+      const totalSeconds = isPomodoroBreak
         ? running && pomodoroEndAtRef.current
           ? Math.max(0, Math.ceil((pomodoroEndAtRef.current - Date.now()) / 1000))
           : pomodoroSecondsRef.current
-        : running
-          ? getSimpleElapsedSeconds()
-          : simpleBaseRef.current;
-      const modeName = isPomodoro
-        ? `${pomodoroModeRef.current === "study" ? "Study" : "Break"} pomodoro`
-        : "Study timer";
-      const state = running ? "Running" : "Paused";
-      const direction = isPomodoro ? "Remaining" : "Elapsed";
+        : isPomodoro
+          ? getPomodoroElapsedSeconds()
+          : running
+            ? getSimpleElapsedSeconds()
+            : simpleBaseRef.current;
+      const subject = getNotificationLabel(selectedSubjectRef.current);
+      const topic = getNotificationLabel(selectedTopicRef.current);
+      const studyLabel = truncateNotificationLabel(
+        [subject, topic].filter(Boolean).join(" · ")
+      );
+      const status = !running
+        ? "Paused"
+        : isPomodoro && pomodoroModeRef.current !== "study"
+          ? "On break"
+          : "Studying";
+      const state = running ? "running" : "paused";
+      const sessionStartedAt = isPomodoro
+        ? pomodoroSessionStartedAtRef.current
+        : simpleSessionStartedAtRef.current;
 
       void showTimerNotification({
-        title: `${modeName} · ${state}`,
-        body: `${direction} ${formatNotificationTime(totalSeconds)}`,
-        state: running ? "running" : "paused",
+        title: "GATE CSE Study Timer",
+        body: `${status}${studyLabel ? ` · ${studyLabel}` : ""}\n${isPomodoroBreak ? "Remaining" : "Elapsed"} ${formatNotificationTime(totalSeconds)}`,
+        state,
         ownerId: timerOwnerIdRef.current,
+        timestamp: sessionStartedAt,
       });
     };
 
@@ -1182,13 +1207,16 @@ export function TimerProvider({ children }) {
     const isRunning = timerMode === "pomodoro" ? pomodoroRunning : simpleRunning;
     if (!isRunning) return undefined;
 
-    const interval = window.setInterval(publish, 1000);
+    const interval = window.setInterval(publish, 15000);
     return () => window.clearInterval(interval);
   }, [
     getSimpleElapsedSeconds,
+    getPomodoroElapsedSeconds,
     pomodoroMode,
     pomodoroRunning,
     simpleRunning,
+    selectedSubject,
+    selectedTopic,
     timerMode,
     timerNotificationsAllowed,
     timerNotificationActive,

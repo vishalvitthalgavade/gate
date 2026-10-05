@@ -34,7 +34,13 @@ async function getServiceWorkerRegistration() {
   }
 }
 
-export async function showTimerNotification({ title, body, state, ownerId }) {
+export async function showTimerNotification({
+  title,
+  body,
+  state,
+  ownerId,
+  timestamp,
+}) {
   if (typeof Notification === "undefined" || Notification.permission !== "granted") {
     return;
   }
@@ -48,13 +54,14 @@ export async function showTimerNotification({ title, body, state, ownerId }) {
     icon: "/gate-192.png",
     badge: "/gate-192.png",
     actions: [
-      { action: "pause", title: "Pause" },
-      { action: "resume", title: "Resume" },
+      state === "running"
+        ? { action: "pause", title: "Pause" }
+        : { action: "resume", title: "Resume" },
     ],
     renotify: false,
     requireInteraction: true,
     silent: true,
-    timestamp: Date.now(),
+    timestamp: Number(timestamp) || Date.now(),
     data: { url: "/timer", state, ownerId },
   };
 
@@ -68,7 +75,8 @@ export async function showTimerNotification({ title, body, state, ownerId }) {
       } catch {
         // Keep the notification usable on platforms that do not expose
         // notification action buttons.
-        const { actions, ...basicOptions } = options;
+        const basicOptions = { ...options };
+        delete basicOptions.actions;
         await registration.showNotification(title, basicOptions);
       }
       return;
